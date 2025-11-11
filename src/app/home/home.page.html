@@ -1,0 +1,44 @@
+<ion-content>
+  <div class="auth-container">
+    <ion-card class="ion-padding" style="width: 100%; max-width: 400px;">
+      <ion-card-header class="ion-text-center">
+        <ion-icon name="shield-checkmark-outline" style="font-size: 48px; color: var(--ion-color-primary)"></ion-icon>
+        <ion-card-title class="ion-margin-top">Welcome Back</ion-card-title>
+        <ion-card-subtitle>Sign in to your account</ion-card-subtitle>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div class="ion-margin-vertical">
+          <ion-item lines="none">
+            <ion-label position="stacked">Email</ion-label>
+            <ion-input type="email" placeholder="Enter your email" [(ngModel)]="email" class="ion-margin-top">
+            </ion-input>
+          </ion-item>
+
+          <ion-item lines="none" class="ion-margin-top password-item">
+            <ion-label position="stacked">Password</ion-label>
+            <ion-input [type]="showPassword ? 'text' : 'password'" placeholder="Enter your password"
+              [(ngModel)]="password" class="ion-margin-top" aria-label="Password">
+              <ion-button fill="clear" size="small" slot="end" (click)="togglePassword()"
+                aria-label="Toggle password visibility">
+                <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+              </ion-button>
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <ion-button expand="block" (click)="login()" class="gradient-button ion-margin-top">
+          <ion-icon name="log-in-outline" slot="start"></ion-icon>
+          Sign In
+        </ion-button>
+        <div class="ion-text-center ion-margin-top register-link-container">
+          <a routerLink="/register" class="register-pill">
+            <ion-icon name="person-add-outline"></ion-icon>
+            <span>Register</span>
+          </a>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+  </div>
+</ion-content>

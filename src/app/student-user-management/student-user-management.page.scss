@@ -1,0 +1,26 @@
+ion-card-title {
+  font-weight: 700;
+  font-size: 20px;
+}
+
+ion-card-content {
+  padding-bottom: 16px;
+}
+
+ion-list {
+  margin-top: 0;
+}
+
+ion-item h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+ion-item p {
+  font-size: 13px;
+  color: #888;
+}
+
+.back-button {
+  --color: var(--ion-color-primary);
+}

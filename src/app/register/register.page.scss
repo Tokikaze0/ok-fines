@@ -1,0 +1,77 @@
+.validation {
+    color: var(--ion-color-danger);
+    font-size: 0.875em;
+    margin: 4px 0 8px 16px;
+}
+
+.google-button {
+    --background: #fff;
+    --color: #757575;
+    --border-color: #ddd;
+    --border-style: solid;
+    --border-width: 1px;
+    
+    ion-icon {
+        color: #4285f4;
+    }
+}
+
+/* Password toggle button styling */
+ion-item {
+    --inner-padding-end: 0px;
+}
+
+ion-item ion-button[slot="end"] {
+    height: 100%;
+    align-items: center;
+    display: flex;
+    margin: 0 4px;
+}
+
+ion-item ion-button[slot="end"] ion-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.password-item {
+    align-items: center;
+}
+
+.password-item ion-input {
+    padding-right: 0;
+}
+
+.password-item ion-button[slot="end"] {
+    height: 36px;
+    width: 36px;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Improved form validation indicators */
+ion-input.ion-valid {
+    --background: #f0fdf4;
+    border: 1px solid #22c55e00;
+}
+
+ion-input.ion-invalid.ion-touched {
+    --background: #fef2f2;
+    border: 1px solid #ef4444;
+}
+
+ion-input, ion-textarea {
+    --padding-start: 16px !important;
+    --padding-end: 16px !important;
+    --padding-top: 12px !important;
+    --padding-bottom: 12px !important;
+    font-size: 1rem !important;
+    --placeholder-color: #94a3b8;
+    --placeholder-opacity: 1;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-top: 4px;
+    color: #1e293b;
+}

@@ -1,0 +1,97 @@
+<ion-header>
+    <ion-toolbar>
+        <ion-buttons slot="start">
+            <ion-button class="back-button" (click)="goBack()">
+                <ion-icon name="arrow-back-outline"></ion-icon>
+                Back
+            </ion-button>
+        </ion-buttons>
+        <ion-title>Student User Management</ion-title>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content>
+    <ion-card>
+        <ion-card-header class="ion-justify-content-between" style="display: flex; align-items: center;">
+            <ion-card-title>{{ isEditing ? 'Edit Student' : 'Add New Student User' }}</ion-card-title>
+            <div>
+                <input
+                    type="file"
+                    accept=".csv"
+                    style="display: none;"
+                    #fileInput
+                    (change)="onFileSelected($event)"
+                    [disabled]="isUploading">
+                <ion-button
+                    (click)="fileInput.click()"
+                    [disabled]="isUploading"
+                    fill="outline"
+                    size="small">
+                    <ion-icon name="cloud-upload" slot="start"></ion-icon>
+                    Bulk Upload CSV
+                </ion-button>
+            </div>
+        </ion-card-header>
+        <ion-card-content>
+            <form (ngSubmit)="isEditing ? updateUser() : addUser()">
+                <ion-item>
+                    <ion-label position="floating">Email</ion-label>
+                    <ion-input type="email" [(ngModel)]="email" name="email" required></ion-input>
+                </ion-item>
+
+                <ion-item>
+                    <ion-label position="floating">Student ID</ion-label>
+                    <ion-input type="text" [(ngModel)]="studentId" name="studentId" required 
+                              placeholder="MMC20**-*****"></ion-input>
+                </ion-item>
+
+                <ion-item>
+                    <ion-label position="floating">Society</ion-label>
+                    <ion-input type="text" [(ngModel)]="society" name="society" required></ion-input>
+                </ion-item>
+
+                <ion-item *ngIf="!isEditing">
+                    <ion-label position="floating">Password</ion-label>
+                    <ion-input type="password" [(ngModel)]="password" name="password" required></ion-input>
+                </ion-item>
+
+                <ion-item *ngIf="!isEditing">
+                    <ion-label position="floating">Confirm Password</ion-label>
+                    <ion-input type="password" [(ngModel)]="confirm" name="confirm" required></ion-input>
+                </ion-item>
+
+                <ion-button expand="block" type="submit" class="ion-margin-top">
+                    {{ isEditing ? 'Update Student' : 'Add Student' }}
+                </ion-button>
+
+                <ion-button *ngIf="isEditing" expand="block" color="medium" (click)="resetForm()"
+                    class="ion-margin-top">
+                    Cancel
+                </ion-button>
+            </form>
+        </ion-card-content>
+    </ion-card>
+
+    <ion-card>
+        <ion-card-header>
+            <ion-card-title>Student Users</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+            <ion-list>
+                <ion-item *ngFor="let user of users">
+                    <ion-label>
+                        <h2>{{ user.email }}</h2>
+                        <p><strong>Student ID:</strong> {{ user.studentId }}</p>
+                        <p><strong>Society:</strong> {{ user.society }}</p>
+                    </ion-label>
+                    <ion-button slot="end" fill="clear" (click)="editUser(user)">
+                        <ion-icon name="create-outline"></ion-icon>
+                    </ion-button>
+                    <ion-button slot="end" fill="clear" color="danger" (click)="confirmDelete(user)">
+                        <ion-icon name="trash-outline"></ion-icon>
+                    </ion-button>
+                </ion-item>
+            </ion-list>
+        </ion-card-content>
+    </ion-card>
+</ion-content>

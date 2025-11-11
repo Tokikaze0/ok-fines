@@ -1,0 +1,7 @@
+{
+  "name": "ok-fines",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

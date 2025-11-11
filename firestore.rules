@@ -1,0 +1,81 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users: allow admins to manage homeroom users
+    match /users/{userId} {
+      allow create: if request.auth != null && (
+                     // Allow users to create their own account
+                     (request.auth.uid == userId &&
+                      request.resource.data.keys().hasAll(['email', 'role', 'uid']) &&
+                      request.resource.data.uid == request.auth.uid) ||
+                     // Allow admins to create homeroom users
+                     (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                      request.resource.data.keys().hasAll(['email', 'role', 'uid', 'createdBy']) &&
+                      request.resource.data.role == 'homeroom' &&
+                      request.resource.data.createdBy == request.auth.uid)
+                   );
+      
+      allow read: if request.auth != null && (
+                   // Users can read their own data
+                   request.auth.uid == userId ||
+                   // Admins can read all user data
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                 );
+      
+      allow update: if request.auth != null &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                     request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['email', 'role']) &&
+                     request.resource.data.role == 'homeroom';
+      
+      allow delete: if request.auth != null &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                     resource.data.role == 'homeroom';
+    }
+
+    // Surveys: require authentication and validate fields, now requiring coordinates
+    match /surveys/{surveyId} {
+      allow create: if request.auth != null
+                   // Require the request userId to match the authenticated user
+                   && request.resource.data.userId == request.auth.uid
+                   // Required keys
+                   && request.resource.data.keys().hasAll(['fullName', 'contact', 'rating', 'datetime', 'userId', 'latitude', 'longitude'])
+                   // rating must be one of the allowed string values
+                   && request.resource.data.rating in ['1','2','3','4','5']
+                   // latitude and longitude must be numbers and within valid ranges
+                   && request.resource.data.latitude is number
+                   && request.resource.data.longitude is number
+                   && request.resource.data.latitude >= -90 && request.resource.data.latitude <= 90
+                   && request.resource.data.longitude >= -180 && request.resource.data.longitude <= 180
+                   // limit allowed keys to avoid injection
+                   // allow either imageUrl (storage) or imageData (base64 in-document)
+                   && request.resource.data.keys().hasOnly(['fullName','contact','rating','comments','datetime','submittedAt','userId','latitude','longitude','imageUrl','imageData']);
+
+      // Allow users to read their own surveys, and admins to read all
+      allow read: if request.auth != null && (
+                    resource.data.userId == request.auth.uid ||
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                  );
+    }
+
+    // Homerooms: created by admins only
+    match /homerooms/{homeroomId} {
+      allow create: if request.auth != null
+                     // only allow users who are admins to create homerooms
+                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                     // required fields
+                     && request.resource.data.keys().hasAll(['name','createdAt','adminUid'])
+                     // adminUid must match the authenticated user
+                     && request.resource.data.adminUid == request.auth.uid
+                     // limit allowed keys
+                     && request.resource.data.keys().hasOnly(['name','code','createdAt','adminUid']);
+
+      // allow admins to read all homerooms and users to read their own
+      allow read: if request.auth != null && (
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+                    resource.data.adminUid == request.auth.uid
+                  );
+    }
+  }
+}

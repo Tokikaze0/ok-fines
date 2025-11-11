@@ -1,0 +1,30 @@
+[
+    {
+        "origin": [
+            "http://localhost:8100",
+            "http://localhost:4200",
+            "capacitor://localhost",
+            "http://localhost"
+        ],
+        "method": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "HEAD",
+            "OPTIONS"
+        ],
+        "maxAgeSeconds": 3600,
+        "responseHeader": [
+            "Content-Type",
+            "Authorization",
+            "Content-Length",
+            "User-Agent",
+            "x-goog-resumable",
+            "Content-Range",
+            "Content-Encoding",
+            "X-Download-Options",
+            "Access-Control-Allow-Origin"
+        ]
+    }
+]
