@@ -1,0 +1,108 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>My Fees</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- Search Card -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Find Your Payment Status</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-item>
+        <ion-label position="floating">Student ID</ion-label>
+        <ion-input [(ngModel)]="studentId" placeholder="MMC20**-*****"></ion-input>
+      </ion-item>
+      <ion-button expand="block" (click)="searchStudent()" class="ion-margin-top">
+        <ion-icon name="search" slot="start"></ion-icon>
+        Search
+      </ion-button>
+      <ion-button expand="block" fill="clear" (click)="reset()">
+        Reset
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Summary Card -->
+  <ion-card *ngIf="summary && !notFound">
+    <ion-card-header>
+      <ion-card-title>Payment Summary</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-row>
+        <ion-col>
+          <h3>Student ID</h3>
+          <p>{{ summary.studentId }}</p>
+        </ion-col>
+        <ion-col *ngIf="summary.society">
+          <h3>Society</h3>
+          <p>{{ summary.society }}</p>
+        </ion-col>
+      </ion-row>
+
+      <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--ion-border-color);">
+
+      <ion-row>
+        <ion-col>
+          <ion-card color="success">
+            <ion-card-content>
+              <ion-text color="light">
+                <p>Total Paid</p>
+                <h2>₱{{ summary.totalPaid.toFixed(2) }}</h2>
+              </ion-text>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+        <ion-col>
+          <ion-card color="danger">
+            <ion-card-content>
+              <ion-text color="light">
+                <p>Total Unpaid</p>
+                <h2>₱{{ summary.totalUnpaid.toFixed(2) }}</h2>
+              </ion-text>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Fees List -->
+  <ion-card *ngIf="summary && !notFound">
+    <ion-card-header>
+      <ion-card-title>Contribution Fees</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list *ngIf="summary.payments.length > 0">
+        <ion-item *ngFor="let payment of summary.payments" lines="full">
+          <ion-label>
+            <h2>{{ getFeeForPayment(payment)?.description || 'Fee' }}</h2>
+            <p>₱{{ getFeeAmount(payment) }}</p>
+          </ion-label>
+          <ion-badge [color]="getPaymentStatusColor(payment)" slot="end">
+            {{ getPaymentStatus(payment) }}
+          </ion-badge>
+        </ion-item>
+      </ion-list>
+
+      <ion-text *ngIf="summary.payments.length === 0" color="medium">
+        <p>No fees found.</p>
+      </ion-text>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Not Found -->
+  <ion-card *ngIf="notFound" color="danger">
+    <ion-card-content>
+      <ion-text color="light">
+        <h2>Student Not Found</h2>
+        <p>Please verify your Student ID and try again.</p>
+      </ion-text>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

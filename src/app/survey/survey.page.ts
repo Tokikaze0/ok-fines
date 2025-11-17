@@ -6,7 +6,7 @@ import { getFirestore, collection, addDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { Geolocation } from '@capacitor/geolocation';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { AuthService } from '../services/auth.service';
+import { AuthService } from '@core/services/auth.service';
 
 @Component({
     selector: 'app-survey',

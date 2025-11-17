@@ -1,0 +1,88 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Outstanding Balance Report</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- Summary Card -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Summary</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-row>
+        <ion-col>
+          <ion-card color="danger">
+            <ion-card-content>
+              <ion-text color="light">
+                <p>Total Outstanding</p>
+                <h2>₱{{ totalOutstanding.toFixed(2) }}</h2>
+              </ion-text>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+        <ion-col>
+          <ion-card color="medium">
+            <ion-card-content>
+              <ion-text color="light">
+                <p>Students</p>
+                <h2>{{ filteredData.length }}</h2>
+              </ion-text>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+
+      <ion-button expand="block" fill="outline" (click)="exportCSV()" class="ion-margin-top">
+        <ion-icon name="download" slot="start"></ion-icon>
+        Export CSV
+      </ion-button>
+      <ion-button expand="block" fill="outline" (click)="printReport()" class="ion-margin-top">
+        <ion-icon name="print" slot="start"></ion-icon>
+        Print
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Search -->
+  <ion-searchbar placeholder="Search by ID, email, or society" [(ngModel)]="searchTerm" (ionChange)="onSearchChange()"></ion-searchbar>
+
+  <!-- Table -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Students with Outstanding Balances</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list *ngIf="filteredData.length > 0">
+        <ion-item *ngFor="let student of filteredData" lines="full">
+          <ion-label>
+            <h2>{{ student.studentId }}</h2>
+            <p>{{ student.email }}</p>
+            <p *ngIf="student.society"><strong>Society:</strong> {{ student.society }}</p>
+          </ion-label>
+          <ion-badge color="danger" slot="end">
+            <h3>₱{{ student.totalUnpaid.toFixed(2) }}</h3>
+          </ion-badge>
+        </ion-item>
+      </ion-list>
+
+      <ion-text *ngIf="filteredData.length === 0" color="medium">
+        <p>No outstanding balances found.</p>
+      </ion-text>
+    </ion-card-content>
+  </ion-card>
+</ion-content>
+
+<style>
+  @media print {
+    ion-toolbar,
+    ion-button,
+    ion-searchbar {
+      display: none;
+    }
+  }
+</style>

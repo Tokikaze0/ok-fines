@@ -1,0 +1,67 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Track Payments</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>All Student Payments</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list *ngIf="payments.length > 0">
+        <ng-container *ngFor="let payment of payments">
+          <!-- Display Mode -->
+          <ion-item *ngIf="selectedPaymentId !== payment.id" lines="full" (click)="selectPayment(payment)">
+            <ion-label>
+              <h2>{{ payment.studentId }}</h2>
+              <p>{{ getFeeName(payment.feeId) }} - ₱{{ getFeeAmount(payment.feeId).toFixed(2) }}</p>
+            </ion-label>
+            <ion-badge [color]="getStatusBadgeColor(payment.status)" slot="end">
+              {{ payment.status === 'paid' ? 'PAID' : 'UNPAID' }}
+            </ion-badge>
+          </ion-item>
+
+          <!-- Edit Mode -->
+          <ion-card *ngIf="selectedPaymentId === payment.id" color="light">
+            <ion-card-content>
+              <ion-text>
+                <h2>{{ payment.studentId }}</h2>
+                <p>{{ getFeeName(payment.feeId) }} - ₱{{ getFeeAmount(payment.feeId).toFixed(2) }}</p>
+              </ion-text>
+
+              <ion-item>
+                <ion-label>Status</ion-label>
+                <ion-select [(ngModel)]="selectedStatus">
+                  <ion-select-option value="paid">Paid</ion-select-option>
+                  <ion-select-option value="unpaid">Unpaid</ion-select-option>
+                </ion-select>
+              </ion-item>
+
+              <ion-item>
+                <ion-label position="floating">Notes (Optional)</ion-label>
+                <ion-textarea [(ngModel)]="notes"></ion-textarea>
+              </ion-item>
+
+              <ion-button expand="block" color="success" (click)="updatePaymentStatus()" class="ion-margin-top">
+                <ion-icon name="checkmark-circle" slot="start"></ion-icon>
+                Save
+              </ion-button>
+              <ion-button expand="block" fill="outline" color="medium" (click)="cancelSelect()">
+                Cancel
+              </ion-button>
+            </ion-card-content>
+          </ion-card>
+        </ng-container>
+      </ion-list>
+
+      <ion-text *ngIf="payments.length === 0" color="medium">
+        <p>No payments yet.</p>
+      </ion-text>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

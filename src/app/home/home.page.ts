@@ -1,7 +1,7 @@
 import { Component, HostListener } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { ApiService } from '../services/api.service';
-import { AuthService } from '../services/auth.service';
+import { ApiService } from '@core/services/api.service';
+import { AuthService } from '@core/services/auth.service';
 import { Router } from '@angular/router';
 import { ToastController } from '@ionic/angular';
 
@@ -56,7 +56,7 @@ export class HomePage {
   }
 
   loadUsers() {
-    this.api.getUsers().subscribe(data => {
+  this.api.getUsers().subscribe((data: any) => {
       console.log('Users:', data);
       this.showToast('Users loaded! Check console.');
     });

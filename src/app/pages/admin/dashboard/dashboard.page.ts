@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { AuthService } from '@core/services/auth.service';
 import { Router } from '@angular/router';
-import { ApiService } from '@core/services/api.service';
 import { ToastController } from '@ionic/angular';
 
 @Component({
@@ -14,7 +13,6 @@ export class DashboardPage {
   constructor(
     private auth: AuthService,
     private router: Router,
-    private api: ApiService,
     private toastCtrl: ToastController
   ) {}
 
