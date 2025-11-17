@@ -2,10 +2,14 @@ import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
-import { environment } from '../../environments/environment';
-import { StorageService } from '@core/services/storage.service';
+import { environment } from '../../../environments/environment';
+import { StorageService } from './storage.service';
 import { Router } from '@angular/router';
 
+/**
+ * Authentication Service
+ * Handles user login, registration, and session management
+ */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private app = initializeApp(environment.firebaseConfig);
@@ -14,15 +18,18 @@ export class AuthService {
 
   constructor(private storage: StorageService, private router: Router) {}
 
+  /**
+   * Login with email and password
+   */
   async login(email: string, password: string): Promise<void> {
     const cred = await signInWithEmailAndPassword(this.auth, email, password);
     const user = cred.user;
     const token = await user.getIdToken();
-    
+
     // Get user role from Firestore
     const userDocRef = doc(this.firestore, 'users', user.uid);
     const userDoc = await getDoc(userDocRef);
-    
+
     if (!userDoc.exists()) {
       throw new Error('User profile not found');
     }
@@ -46,12 +53,14 @@ export class AuthService {
     }
   }
 
+  /**
+   * Register new admin user
+   */
   async register(email: string, password: string): Promise<void> {
-    // Create a Firebase user and store the ID token similarly to login
     const cred = await createUserWithEmailAndPassword(this.auth, email, password);
     const user = cred.user;
     const token = await user.getIdToken();
-    
+
     // Save user data in Firestore - always as admin
     const userDocRef = doc(this.firestore, 'users', user.uid);
     await setDoc(userDocRef, {
@@ -60,17 +69,16 @@ export class AuthService {
       uid: user.uid,
       createdAt: new Date().toISOString()
     });
-    
+
     await this.storage.set('access_token', token);
     await this.storage.set('user_role', 'admin');
-    
+
     // Navigate to admin dashboard
     this.router.navigate(['/dashboard']);
   }
 
   /**
-   * Sign in using Google provider (web popup flow).
-   * Creates/updates a user document in Firestore and stores ID token.
+   * Sign in using Google provider
    */
   async signInWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();
@@ -91,15 +99,31 @@ export class AuthService {
     await this.storage.set('access_token', token);
   }
 
+  /**
+   * Get authentication token
+   */
   async getToken(): Promise<string | null> {
     return this.storage.get('access_token');
   }
 
+  /**
+   * Get user role
+   */
+  async getUserRole(): Promise<string | null> {
+    return this.storage.get('user_role');
+  }
+
+  /**
+   * Logout
+   */
   async logout(): Promise<void> {
     try {
       await this.auth.signOut();
-    } catch {}
+    } catch (e) {
+      // Ignore sign out errors
+    }
     await this.storage.remove('access_token');
+    await this.storage.remove('user_role');
     await this.router.navigate(['/login']).catch(() => this.router.navigate(['/']));
   }
 }

@@ -2,80 +2,143 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users: allow admins to manage homeroom users
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Helper function to get user data
+    function getUserData(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data;
+    }
+
+    // Users: authentication and role-based access control
     match /users/{userId} {
       allow create: if request.auth != null && (
-                     // Allow users to create their own account
+                     // Allow users to create their own account during registration
                      (request.auth.uid == userId &&
                       request.resource.data.keys().hasAll(['email', 'role', 'uid']) &&
-                      request.resource.data.uid == request.auth.uid) ||
-                     // Allow admins to create homeroom users
-                     (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
-                      request.resource.data.keys().hasAll(['email', 'role', 'uid', 'createdBy']) &&
-                      request.resource.data.role == 'homeroom' &&
-                      request.resource.data.createdBy == request.auth.uid)
+                      request.resource.data.uid == request.auth.uid &&
+                      request.resource.data.role in ['student', 'homeroom', 'admin']) ||
+                     // Allow admins to create new users
+                     (request.auth != null && 
+                      isAdmin() &&
+                      request.resource.data.keys().hasAll(['email', 'role', 'uid']) &&
+                      request.resource.data.role in ['student', 'homeroom', 'admin'])
                    );
       
       allow read: if request.auth != null && (
                    // Users can read their own data
                    request.auth.uid == userId ||
                    // Admins can read all user data
-                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                   isAdmin()
                  );
       
       allow update: if request.auth != null &&
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+                     isAdmin() &&
                      request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['email', 'role']) &&
-                     request.resource.data.role == 'homeroom';
+                       .hasOnly(['email', 'role', 'studentId', 'society', 'displayName']);
       
-      allow delete: if request.auth != null &&
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
-                     resource.data.role == 'homeroom';
+      allow delete: if request.auth != null && isAdmin();
     }
 
-    // Surveys: require authentication and validate fields, now requiring coordinates
+    // Surveys: require authentication and validate fields
     match /surveys/{surveyId} {
       allow create: if request.auth != null
-                   // Require the request userId to match the authenticated user
                    && request.resource.data.userId == request.auth.uid
-                   // Required keys
                    && request.resource.data.keys().hasAll(['fullName', 'contact', 'rating', 'datetime', 'userId', 'latitude', 'longitude'])
-                   // rating must be one of the allowed string values
                    && request.resource.data.rating in ['1','2','3','4','5']
-                   // latitude and longitude must be numbers and within valid ranges
                    && request.resource.data.latitude is number
                    && request.resource.data.longitude is number
                    && request.resource.data.latitude >= -90 && request.resource.data.latitude <= 90
                    && request.resource.data.longitude >= -180 && request.resource.data.longitude <= 180
-                   // limit allowed keys to avoid injection
-                   // allow either imageUrl (storage) or imageData (base64 in-document)
                    && request.resource.data.keys().hasOnly(['fullName','contact','rating','comments','datetime','submittedAt','userId','latitude','longitude','imageUrl','imageData']);
 
-      // Allow users to read their own surveys, and admins to read all
       allow read: if request.auth != null && (
                     resource.data.userId == request.auth.uid ||
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                    isAdmin()
                   );
+
+      allow update: if request.auth != null && 
+                     resource.data.userId == request.auth.uid;
+
+      allow delete: if request.auth != null && (
+                     resource.data.userId == request.auth.uid ||
+                     isAdmin()
+                   );
     }
 
-    // Homerooms: created by admins only
+    // Homerooms: created and managed by admins
     match /homerooms/{homeroomId} {
       allow create: if request.auth != null
-                     // only allow users who are admins to create homerooms
-                     && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-                     // required fields
+                     && isAdmin()
                      && request.resource.data.keys().hasAll(['name','createdAt','adminUid'])
-                     // adminUid must match the authenticated user
                      && request.resource.data.adminUid == request.auth.uid
-                     // limit allowed keys
                      && request.resource.data.keys().hasOnly(['name','code','createdAt','adminUid']);
 
-      // allow admins to read all homerooms and users to read their own
       allow read: if request.auth != null && (
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+                    isAdmin() ||
                     resource.data.adminUid == request.auth.uid
                   );
+
+      allow update: if request.auth != null &&
+                     isAdmin() &&
+                     request.resource.data.adminUid == resource.data.adminUid;
+
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // Fees: admin-managed contribution fees
+    match /fees/{feeId} {
+      allow create: if request.auth != null
+                     && isAdmin()
+                     && request.resource.data.keys().hasAll(['description', 'amount', 'createdAt', 'createdBy'])
+                     && request.resource.data.createdBy == request.auth.uid
+                     && request.resource.data.amount is number
+                     && request.resource.data.amount > 0
+                     && request.resource.data.keys().hasOnly(['description', 'amount', 'createdAt', 'createdBy']);
+
+      allow read: if request.auth != null;
+
+      allow update: if request.auth != null
+                     && isAdmin()
+                     && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['description', 'amount'])
+                     && request.resource.data.amount is number
+                     && request.resource.data.amount > 0
+                     && request.resource.data.createdBy == resource.data.createdBy;
+
+      allow delete: if request.auth != null && isAdmin();
+
+      allow list: if request.auth != null;
+    }
+
+    // Payments: payment tracking with granular access control
+    match /payments/{paymentId} {
+      allow create: if request.auth != null
+                     && isAdmin()
+                     && request.resource.data.keys().hasAll(['studentId', 'feeId', 'status', 'createdAt'])
+                     && request.resource.data.status in ['paid', 'unpaid']
+                     && request.resource.data.keys().hasOnly(['studentId', 'feeId', 'status', 'createdAt', 'paidAt', 'paidBy', 'notes']);
+
+      allow read: if request.auth != null && (
+                    // Admins can read all payments
+                    isAdmin() ||
+                    // Students can only read their own payments (filtered by studentId)
+                    (resource.data.studentId == getUserData(request.auth.uid).studentId)
+                  );
+
+      allow update: if request.auth != null
+                     && isAdmin()
+                     && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['status', 'paidAt', 'paidBy', 'notes'])
+                     && request.resource.data.status in ['paid', 'unpaid']
+                     && request.resource.data.studentId == resource.data.studentId
+                     && request.resource.data.feeId == resource.data.feeId;
+
+      allow delete: if request.auth != null && isAdmin();
+
+      allow list: if request.auth != null;
     }
   }
 }

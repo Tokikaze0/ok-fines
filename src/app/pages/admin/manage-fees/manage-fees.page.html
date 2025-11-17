@@ -1,0 +1,75 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Manage Fees</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- Add Fee Card -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Add New Fee</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-item>
+        <ion-label position="floating">Fee Description</ion-label>
+        <ion-input [(ngModel)]="newFeeDescription" placeholder="e.g., Monthly Contribution"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="floating">Amount (₱)</ion-label>
+        <ion-input type="number" [(ngModel)]="newFeeAmount" placeholder="0.00"></ion-input>
+      </ion-item>
+      <ion-button expand="block" (click)="addFee()" class="ion-margin-top">
+        <ion-icon name="add-circle" slot="start"></ion-icon>
+        Add Fee
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Fees List -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Active Fees</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list *ngIf="fees.length > 0">
+        <ng-container *ngFor="let fee of fees">
+          <!-- Display Mode -->
+          <ion-item *ngIf="editingFeeId !== fee.id" lines="full">
+            <ion-label>
+              <h2>{{ fee.description }}</h2>
+              <p>₱{{ fee.amount.toFixed(2) }}</p>
+            </ion-label>
+            <ion-button slot="end" fill="clear" (click)="editFee(fee)">
+              <ion-icon name="pencil"></ion-icon>
+            </ion-button>
+            <ion-button slot="end" fill="clear" color="danger" (click)="deleteFee(fee)">
+              <ion-icon name="trash"></ion-icon>
+            </ion-button>
+          </ion-item>
+
+          <!-- Edit Mode -->
+          <ion-item *ngIf="editingFeeId === fee.id" lines="full">
+            <ion-label>
+              <ion-input [(ngModel)]="editingDescription" placeholder="Description"></ion-input>
+              <ion-input type="number" [(ngModel)]="editingAmount" placeholder="Amount"></ion-input>
+            </ion-label>
+          </ion-item>
+
+          <!-- Edit Actions -->
+          <ion-item *ngIf="editingFeeId === fee.id" lines="full">
+            <ion-button fill="solid" color="success" (click)="updateFee()">Save</ion-button>
+            <ion-button fill="outline" color="medium" (click)="cancelEdit()">Cancel</ion-button>
+          </ion-item>
+        </ng-container>
+      </ion-list>
+
+      <ion-text *ngIf="fees.length === 0" color="medium">
+        <p>No fees added yet.</p>
+      </ion-text>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

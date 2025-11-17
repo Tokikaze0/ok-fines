@@ -6,6 +6,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "import:students": "node scripts/import-students.js",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -31,7 +32,9 @@
     "@capacitor/status-bar": "7.0.3",
     "@ionic/angular": "^8.0.0",
     "@ionic/pwa-elements": "^3.3.0",
+    "csv-parse": "^6.1.0",
     "firebase": "^12.4.0",
+    "firebase-admin": "^13.6.0",
     "ionicons": "^7.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",

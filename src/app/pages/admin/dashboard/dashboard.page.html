@@ -1,0 +1,111 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>
+      <span style="font-weight: 700; font-size: 24px;">Dashboard</span>
+    </ion-title>
+    <ion-buttons slot="end" color="medium" fill="clear">
+      <ion-button expand="block" (click)="logout()" color="secondary">
+        <ion-icon name="log-out-outline" slot="start"></ion-icon>
+        Sign Out
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="welcome-section ion-padding">
+    <h1 class="ion-no-margin" style="font-size: 28px; font-weight: 700; color: #1f2937;">
+      Welcome Back!
+    </h1>
+    <p style="color: #6b7280; margin-top: 8px;">
+      Here's what's happening in your account
+    </p>
+  </div>
+
+  <ion-grid>
+    <ion-row>
+      <ion-col size="12" size-md="6">
+        <ion-card class="stats-card">
+          <ion-card-content>
+            <div class="ion-text-center">
+              <ion-icon name="people" style="font-size: 48px; color: var(--ion-color-primary)"></ion-icon>
+              <h2 style="font-size: 24px; font-weight: 600; margin: 16px 0;">Users</h2>
+              <ion-button expand="block" (click)="openSurvey()" class="gradient-button">
+                <ion-icon name="calendar" slot="start"></ion-icon>
+                Open Survey
+              </ion-button>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="12" size-md="6">
+        <ion-card class="stats-card">
+          <ion-card-content>
+            <div class="ion-text-center">
+              <ion-icon name="school" style="font-size: 48px; color: var(--ion-color-tertiary)"></ion-icon>
+              <h2 style="font-size: 24px; font-weight: 600; margin: 16px 0;">Student User Management</h2>
+              <p class="ion-text-center">Manage student user accounts</p>
+              <ion-button expand="block" routerLink="/student-user-management" class="gradient-button ion-margin-top">
+                <ion-icon name="people" slot="start"></ion-icon>
+                Manage Students
+              </ion-button>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <ion-row>
+      <ion-col size="12" size-md="6">
+        <ion-card class="stats-card">
+          <ion-card-content>
+            <div class="ion-text-center">
+              <ion-icon name="receipt" style="font-size: 48px; color: var(--ion-color-success)"></ion-icon>
+              <h2 style="font-size: 24px; font-weight: 600; margin: 16px 0;">Manage Fees</h2>
+              <p class="ion-text-center">Add, edit, or delete contribution fees</p>
+              <ion-button expand="block" routerLink="/manage-fees" class="gradient-button ion-margin-top">
+                <ion-icon name="add-circle" slot="start"></ion-icon>
+                Manage Fees
+              </ion-button>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="12" size-md="6">
+        <ion-card class="stats-card">
+          <ion-card-content>
+            <div class="ion-text-center">
+              <ion-icon name="list" style="font-size: 48px; color: var(--ion-color-warning)"></ion-icon>
+              <h2 style="font-size: 24px; font-weight: 600; margin: 16px 0;">Track Payments</h2>
+              <p class="ion-text-center">Track and update student payments</p>
+              <ion-button expand="block" routerLink="/track-payments" class="gradient-button ion-margin-top">
+                <ion-icon name="checkmark-circle" slot="start"></ion-icon>
+                Track Payments
+              </ion-button>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <ion-row>
+      <ion-col size="12" size-md="6">
+        <ion-card class="stats-card">
+          <ion-card-content>
+            <div class="ion-text-center">
+              <ion-icon name="document-text" style="font-size: 48px; color: var(--ion-color-danger)"></ion-icon>
+              <h2 style="font-size: 24px; font-weight: 600; margin: 16px 0;">Outstanding Report</h2>
+              <p class="ion-text-center">View students with outstanding balances</p>
+              <ion-button expand="block" routerLink="/outstanding-report" class="gradient-button ion-margin-top">
+                <ion-icon name="bar-chart" slot="start"></ion-icon>
+                View Report
+              </ion-button>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</ion-content>
