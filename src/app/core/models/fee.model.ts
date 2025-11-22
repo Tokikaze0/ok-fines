@@ -7,6 +7,7 @@ export interface Fee {
   amount: number;
   createdAt: string;
   createdBy: string; // admin UID
+  societyId?: string;
 }
 
 /**
@@ -21,6 +22,7 @@ export interface Payment {
   paidBy?: string; // admin UID who marked as paid
   notes?: string;
   createdAt: string;
+  societyId?: string;
 }
 
 /**

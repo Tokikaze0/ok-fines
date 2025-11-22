@@ -10,6 +10,7 @@ export interface User {
   createdBy?: string; // UID of the admin who created this user
   studentId?: string; // Format: MMC20**-*****
   society?: string;
+  societyId?: string; // Unique identifier for admin/society
 }
 
 /**
@@ -20,6 +21,14 @@ export interface BulkStudentImport {
   password: string;
   studentId: string;
   society: string;
+  lastName?: string;
+  firstName?: string;
+  middleName?: string;
+  programId?: string;
+  collegeId?: string;
+  yearLevelId?: string;
+  sectionId?: string;
+  societyId?: string;
 }
 
 /**

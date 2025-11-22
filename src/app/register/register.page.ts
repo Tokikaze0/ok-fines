@@ -13,6 +13,7 @@ export class RegisterPage {
     email = '';
     password = '';
     confirm = '';
+    societyId = '';
     loading = false;
     showPassword = false;
     showConfirm = false;
@@ -34,6 +35,16 @@ export class RegisterPage {
             this.showToast('Please provide email and password');
             return;
         }
+        // Validate societyId presence and format
+        if (!this.societyId) {
+            this.showToast('Please provide a Society ID');
+            return;
+        }
+        const societyIdRegex = /^[A-Za-z0-9_-]{3,30}$/;
+        if (!societyIdRegex.test(this.societyId)) {
+            this.showToast('Society ID must be 3–30 characters; letters, numbers, dash and underscore allowed');
+            return;
+        }
         if (this.password !== this.confirm) {
             this.showToast('Passwords do not match');
             return;
@@ -48,7 +59,7 @@ export class RegisterPage {
         await loader.present();
 
         try {
-            await this.auth.register(this.email, this.password);
+            await this.auth.register(this.email, this.password, this.societyId);
             await loader.dismiss();
             this.loading = false;
             await this.showToast('New admin account created successfully!', 2000);
@@ -62,10 +73,17 @@ export class RegisterPage {
                 await this.showToast('Please enter a valid email address');
             } else if (e.code === 'auth/weak-password') {
                 await this.showToast('Password is too weak');
+            } else if (e.code === 'society/admin_exists') {
+                await this.showToast('An admin for this society already exists');
             } else {
                 await this.showToast('Registration failed: ' + (e.message || 'Unknown error'));
             }
         }
+    }
+
+    isSocietyIdValid(): boolean {
+        const societyIdRegex = /^[A-Za-z0-9_-]{3,30}$/;
+        return !!this.societyId && societyIdRegex.test(this.societyId);
     }
 
     async googleSignIn() {
