@@ -1,0 +1,33 @@
+<ion-content>
+	<div class="landing-plain">
+		<div class="landing-card">
+			<h1 class="landing-title">VIEW YOUR PAYMENT HISTORY</h1>
+
+			<div class="landing-box">
+				<label for="studentId" class="plain-label">Enter your student ID:</label>
+				<ion-input
+					id="studentId"
+					aria-label="Student ID"
+					placeholder="e.g. MMC2025-00109"
+					[(ngModel)]="studentId"
+					(ngModelChange)="onInputChange($event)"
+					(keydown.enter)="onSearch()"
+					class="plain-input"
+				></ion-input>
+
+				<ion-button
+					class="plain-btn"
+					(click)="onSearch()"
+					[disabled]="loading"
+					aria-label="Search"
+				>
+					<span *ngIf="loading"><ion-spinner name="crescent"></ion-spinner></span>
+					<span *ngIf="!loading">SEARCH</span>
+				</ion-button>
+			</div>
+
+			<div class="admin-row"><a (click)="goHome()" class="admin-link" role="button">Admin Login</a></div>
+		</div>
+	</div>
+</ion-content>
+

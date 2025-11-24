@@ -101,3 +101,42 @@ ion-input {
     }
   }
 }
+
+.auth-container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+}
+
+.gradient-button {
+  --background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
+}
+
+.delete-toast {
+  --background: #fef2f2;
+  --color: #991b1b;
+  --border-radius: 12px;
+  --button-color: #991b1b;
+  --min-height: 64px;
+  
+  .toast-message {
+    font-weight: 500;
+  }
+
+  ion-icon {
+    color: #991b1b;
+  }
+
+  ion-button {
+    --color: #991b1b;
+    font-weight: 500;
+    
+    &[role="destructive"] {
+      --background: #991b1b;
+      --color: #ffffff;
+    }
+  }
+}

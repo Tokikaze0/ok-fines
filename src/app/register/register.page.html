@@ -15,6 +15,13 @@
               inputmode="email" aria-label="Email">
             </ion-input>
           </ion-item>
+            <ion-item lines="none" class="ion-margin-top">
+              <ion-label position="stacked">Society ID</ion-label>
+              <ion-input type="text" placeholder="Enter society id (unique)" [(ngModel)]="societyId" class="ion-margin-top"
+                aria-label="Society ID">
+              </ion-input>
+            </ion-item>
+            <div *ngIf="societyId && !isSocietyIdValid()" class="validation">Society ID must be 3–30 characters; letters, numbers, dash and underscore allowed</div>
           <div *ngIf="email && !email.includes('@')" class="validation">Please enter a valid email address</div>
 
           <ion-item lines="full">
@@ -42,7 +49,7 @@
         </div>
 
         <ion-button expand="block" (click)="register()" class="gradient-button ion-margin-top"
-          [disabled]="loading || password.length < 6">
+          [disabled]="loading || password.length < 6 || !isSocietyIdValid()">
           <ion-spinner *ngIf="loading" name="dots" slot="start"></ion-spinner>
           <!-- <ion-icon *ngIf="!loading" name="person-add-outline" slot="start"></ion-icon> -->
           <span *ngIf="!loading">Create Account</span>

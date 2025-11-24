@@ -53,8 +53,12 @@ const routes: Routes = [
     loadChildren: () => import('./pages/student/student-fees/student-fees.module').then(m => m.StudentFeesPageModule)
   },
   {
+    path: 'landing',
+    loadComponent: () => import('./landing/landing.page').then(m => m.LandingPage)
+  },
+  {
     path: '',
-    redirectTo: 'home',
+    redirectTo: 'landing',
     pathMatch: 'full'
   }
 ];

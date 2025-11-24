@@ -7,6 +7,7 @@ import {
   getDocs,
   updateDoc,
   doc,
+  getDoc,
   onSnapshot,
   Query
 } from 'firebase/firestore';
@@ -29,8 +30,14 @@ export class PaymentService {
    * Get all payments
    */
   async getAllPayments(): Promise<Payment[]> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('User not authenticated');
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    const societyId = currentUserDoc.exists() ? currentUserDoc.data()['societyId'] || currentUser.uid : currentUser.uid;
+
     const paymentsRef = collection(this.firestore, 'payments');
-    const snapshot = await getDocs(paymentsRef);
+    const q = query(paymentsRef, where('societyId', '==', societyId));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       ...doc.data(),
       id: doc.id
@@ -41,8 +48,13 @@ export class PaymentService {
    * Get payments by student ID
    */
   async getPaymentsByStudentId(studentId: string): Promise<Payment[]> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('User not authenticated');
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    const societyId = currentUserDoc.exists() ? currentUserDoc.data()['societyId'] || currentUser.uid : currentUser.uid;
+
     const paymentsRef = collection(this.firestore, 'payments');
-    const q = query(paymentsRef, where('studentId', '==', studentId));
+    const q = query(paymentsRef, where('studentId', '==', studentId), where('societyId', '==', societyId));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       ...doc.data(),
@@ -56,7 +68,15 @@ export class PaymentService {
   async updatePaymentStatus(paymentId: string, status: 'paid' | 'unpaid', notes?: string): Promise<void> {
     const currentUser = this.auth.currentUser;
     if (!currentUser) throw new Error('User not authenticated');
-
+    // verify payment belongs to the same society as the admin
+    const paymentRefCheck = await getDoc(doc(this.firestore, 'payments', paymentId));
+    if (!paymentRefCheck.exists()) throw new Error('Payment not found');
+    const paymentDocData: any = paymentRefCheck.data();
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    const societyId = currentUserDoc.exists() ? currentUserDoc.data()['societyId'] || currentUser.uid : currentUser.uid;
+    if (paymentDocData.societyId && paymentDocData.societyId !== societyId) {
+      throw new Error('Permission denied: payment belongs to another society');
+    }
     const paymentRef = doc(this.firestore, 'payments', paymentId);
     const updateData: any = {
       status,
@@ -90,7 +110,13 @@ export class PaymentService {
     }
 
     const studentData = studentSnapshot.docs[0].data() as User;
-    const payments = await this.getPaymentsByStudentId(studentId);
+    // Fetch payments filtered by the student's society
+    const payments = await (async () => {
+      const paymentsRef = collection(this.firestore, 'payments');
+      const q2 = query(paymentsRef, where('studentId', '==', studentId), where('societyId', '==', studentData.societyId || ''));
+      const snapshot = await getDocs(q2);
+      return snapshot.docs.map(d => ({ ...d.data(), id: d.id } as Payment));
+    })();
     const fees = await this.feeService.getAllFees();
 
     // Calculate totals
@@ -123,8 +149,14 @@ export class PaymentService {
    * Get outstanding balance report (unpaid fees)
    */
   async getOutstandingBalanceReport(): Promise<StudentPaymentSummary[]> {
+    // Only get unpaid payments for current admin's society
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('User not authenticated');
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    const societyId = currentUserDoc.exists() ? currentUserDoc.data()['societyId'] || currentUser.uid : currentUser.uid;
+
     const paymentsRef = collection(this.firestore, 'payments');
-    const q = query(paymentsRef, where('status', '==', 'unpaid'));
+    const q = query(paymentsRef, where('status', '==', 'unpaid'), where('societyId', '==', societyId));
     const paymentSnapshot = await getDocs(q);
 
     if (paymentSnapshot.empty) return [];
@@ -140,7 +172,7 @@ export class PaymentService {
       if (!studentsMap.has(payment.studentId)) {
         // Get student info from users collection
         const usersRef = collection(this.firestore, 'users');
-        const q2 = query(usersRef, where('studentId', '==', payment.studentId));
+        const q2 = query(usersRef, where('studentId', '==', payment.studentId), where('societyId', '==', societyId));
         const studentSnapshot = await getDocs(q2);
 
         if (studentSnapshot.empty) continue;

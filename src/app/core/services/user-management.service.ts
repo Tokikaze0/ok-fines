@@ -13,6 +13,28 @@ export class UserManagementService {
   private firestore = getFirestore(this.app);
   private auth = getAuth(this.app);
 
+  // Normalize student ID formats and pad numeric part to 5 digits when appropriate.
+  // Examples:
+  //  - "MMC2025 - 00101" -> "MMC2025-00101"
+  //  - "MMC2021-0653" -> "MMC2021-00653"
+  private normalizeStudentId(raw: string): string | null {
+    if (!raw || typeof raw !== 'string') return null;
+    let s = raw.trim().toUpperCase();
+    s = s.replace(/\s*-\s*/g, '-');
+    s = s.replace(/\s+/g, '');
+
+    if (/^C\d+-\d+$/.test(s)) return s;
+    const m = s.match(/^MMC(\d{4})-(\d{4,5})$/);
+    if (m) {
+      const year = m[1];
+      let num = m[2];
+      if (num.length === 4) num = '0' + num;
+      return `MMC${year}-${num}`;
+    }
+    if (/^MMC\d{4}-\d{4}$/.test(s)) return s;
+    return null;
+  }
+
   /**
    * Create a new student user
    * @param email Student email
@@ -20,7 +42,7 @@ export class UserManagementService {
    * @param studentId Student ID (format: MMC20**-*****)
    * @param society Student's society
    */
-  async createStudentUser(email: string, password: string, studentId: string, society: string): Promise<User> {
+  async createStudentUser(email: string, password: string, studentId: string, society: any): Promise<User> {
     const currentUser = this.auth.currentUser;
     if (!currentUser) {
       throw new Error('No authenticated user found');
@@ -36,15 +58,25 @@ export class UserManagementService {
       throw new Error('Only admin users can create student users');
     }
 
-    // Validate student ID format
-    const studentIdRegex = /^MMC20\d{2}-\d{5}$/;
-    if (!studentIdRegex.test(studentId)) {
-      throw new Error('Invalid student ID format. Must be MMC20**-*****');
+    // Accept extra fields for single registration
+    // (Assume extra fields are passed as an object in 'society' param if needed)
+    let extraFields: any = {};
+    if (typeof society === 'object' && society !== null) {
+      extraFields = society;
+      society = extraFields.society || '';
     }
+
+    // Normalize & validate student ID
+    const normalized = this.normalizeStudentId(studentId);
+    if (!normalized) {
+      throw new Error('Invalid student ID format. Supported examples: MMC2021-00653, MMC2024-00531, C12-34');
+    }
+    studentId = normalized;
 
     const cred = await createUserWithEmailAndPassword(this.auth, email, password);
     const user = cred.user;
 
+    const societyId = adminData['societyId'] || currentUser.uid;
     const userData: User = {
       uid: user.uid,
       email: email,
@@ -52,11 +84,25 @@ export class UserManagementService {
       createdAt: new Date().toISOString(),
       createdBy: currentUser.uid,
       studentId: studentId,
-      society: society
+      society: society,
+      societyId,
+      ...extraFields
     };
 
     const userDocRef = doc(this.firestore, 'users', user.uid);
     await setDoc(userDocRef, userData);
+
+    // Also save to students collection
+    const studentDocRef = doc(this.firestore, 'students', studentId);
+    await setDoc(studentDocRef, {
+      studentId,
+      email,
+      society,
+      createdAt: userData.createdAt,
+      createdBy: userData.createdBy,
+      societyId,
+      ...extraFields
+    });
     return userData;
   }
 
@@ -79,8 +125,9 @@ export class UserManagementService {
       throw new Error('User is not an admin');
     }
 
+    const societyId = userData.societyId || currentUser.uid;
     const usersRef = collection(this.firestore, 'users');
-    const q = query(usersRef, where('role', '==', 'student'));
+    const q = query(usersRef, where('role', '==', 'student'), where('societyId', '==', societyId));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
   }
@@ -114,12 +161,13 @@ export class UserManagementService {
       throw new Error('Can only update student users');
     }
 
-    // Validate student ID if being updated
+    // Validate and normalize student ID if being updated
     if (data.studentId) {
-      const studentIdRegex = /^MMC20\d{2}-\d{5}$/;
-      if (!studentIdRegex.test(data.studentId)) {
-        throw new Error('Invalid student ID format. Must be MMC20**-*****');
+      const normalizedUpdate = this.normalizeStudentId(data.studentId as string);
+      if (!normalizedUpdate) {
+        throw new Error('Invalid student ID format. Must be MMC202*-00*** or C##-##');
       }
+      data.studentId = normalizedUpdate;
     }
 
     const userDocRef = doc(this.firestore, 'users', uid);
@@ -167,13 +215,74 @@ export class UserManagementService {
       errors: []
     };
 
+    const societyId = currentUserDoc.data()['societyId'] || currentUser.uid;
     for (const student of students) {
       try {
-        await this.createStudentUser(student.email, student.password, student.studentId, student.society);
+        await this.createStudentUser(student.email, student.password, student.studentId, {
+          ...student,
+          societyId
+        });
         results.success.push(student.email);
       } catch (error: any) {
         results.errors.push({
           email: student.email,
+          error: error.message || 'Unknown error'
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Create students in the `students` collection (Firestore data only, no Firebase Auth)
+   * Useful for bulk import of student data without creating authentication accounts
+   */
+  async createBulkStudentsToCollection(students: BulkStudentImport[]): Promise<BulkOperationResult> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No authenticated user found');
+    }
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    if (!currentUserDoc.exists() || currentUserDoc.data()['role'] !== 'admin') {
+      throw new Error('Only admin users can create students');
+    }
+
+    const results: BulkOperationResult = {
+      success: [],
+      errors: []
+    };
+
+    const societyId = currentUserDoc.data()['societyId'] || currentUser.uid;
+    for (const student of students) {
+      try {
+        // Accept all extra fields from student object, no email/password
+        // Normalize studentId coming from import
+        const normalized = this.normalizeStudentId(student.studentId || '');
+        if (!normalized) throw new Error('Invalid student ID: ' + (student.studentId || ''));
+        student.studentId = normalized;
+        const studentData = {
+          studentId: student.studentId,
+          society: student.society || '',
+          createdAt: new Date().toISOString(),
+          createdBy: currentUser.uid,
+          lastName: student.lastName || '',
+          firstName: student.firstName || '',
+          middleName: student.middleName || '',
+          programId: student.programId || '',
+          collegeId: student.collegeId || '',
+          yearLevelId: student.yearLevelId || '',
+          sectionId: student.sectionId || '',
+          societyId
+        };
+
+        const studentDocRef = doc(this.firestore, 'students', student.studentId);
+        await setDoc(studentDocRef, studentData);
+        results.success.push(student.studentId);
+      } catch (error: any) {
+        results.errors.push({
+          email: student.studentId, // Use studentId as identifier for error reporting
           error: error.message || 'Unknown error'
         });
       }
@@ -193,5 +302,57 @@ export class UserManagementService {
       return docSnap.data() as User;
     }
     return null;
+  }
+
+  /**
+   * Get all students from the `students` collection (not Auth users)
+   */
+  async getAllStudentsFromCollection(): Promise<any[]> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No authenticated user found');
+    }
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    if (!currentUserDoc.exists()) {
+      throw new Error('User document not found');
+    }
+
+    const userData = currentUserDoc.data() as any;
+    if (userData.role !== 'admin') {
+      throw new Error('User is not an admin');
+    }
+
+    const societyId = userData.societyId || currentUser.uid;
+    const studentsRef = collection(this.firestore, 'students');
+    const q = query(studentsRef, where('societyId', '==', societyId));
+    const querySnapshot = await getDocs(q);
+
+    const students: any[] = querySnapshot.docs.map(d => {
+      const data = d.data();
+      const lastName = data['lastName'] || '';
+      const firstName = data['firstName'] || '';
+      const middleName = data['middleName'] || '';
+      return {
+        id: d.id,
+        ...data,
+        fullName: `${lastName}${lastName ? ', ' : ''}${firstName}${middleName ? ' ' + middleName : ''}`.trim()
+      } as any;
+    });
+
+    // sort by lastName then firstName
+    students.sort((a: any, b: any) => {
+      const la = ((a.lastName || '') as string).toString().toLowerCase();
+      const lb = ((b.lastName || '') as string).toString().toLowerCase();
+      if (la < lb) return -1;
+      if (la > lb) return 1;
+      const fa = ((a.firstName || '') as string).toString().toLowerCase();
+      const fb = ((b.firstName || '') as string).toString().toLowerCase();
+      if (fa < fb) return -1;
+      if (fa > fb) return 1;
+      return 0;
+    });
+
+    return students;
   }
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { environment } from '../../../environments/environment';
 import { StorageService } from './storage.service';
 import { Router } from '@angular/router';
@@ -56,18 +56,34 @@ export class AuthService {
   /**
    * Register new admin user
    */
-  async register(email: string, password: string): Promise<void> {
+  async register(email: string, password: string, societyId: string): Promise<void> {
+    // Ensure societyId is provided
+    if (!societyId) {
+      throw new Error('Missing societyId');
+    }
+
+    // Check that no other admin exists for this societyId
+    const usersRef = collection(this.firestore, 'users');
+    const q = query(usersRef, where('role', '==', 'admin'), where('societyId', '==', societyId));
+    const existing = await getDocs(q);
+    if (!existing.empty) {
+      const e: any = new Error('An admin for this society already exists');
+      e.code = 'society/admin_exists';
+      throw e;
+    }
+
     const cred = await createUserWithEmailAndPassword(this.auth, email, password);
     const user = cred.user;
     const token = await user.getIdToken();
 
-    // Save user data in Firestore - always as admin
+    // Save user data in Firestore - always as admin and set societyId
     const userDocRef = doc(this.firestore, 'users', user.uid);
     await setDoc(userDocRef, {
       email: email,
       role: 'admin',
       uid: user.uid,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      societyId: societyId
     });
 
     await this.storage.set('access_token', token);
@@ -93,7 +109,9 @@ export class AuthService {
       role: 'admin',
       uid: user.uid,
       provider: 'google',
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      // Default societyId to user uid to avoid collisions; admin may change later
+      societyId: user.uid
     }, { merge: true });
 
     await this.storage.set('access_token', token);
