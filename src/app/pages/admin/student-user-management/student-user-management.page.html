@@ -1,10 +1,7 @@
 <ion-header>
     <ion-toolbar>
         <ion-buttons slot="start">
-            <ion-button class="back-button" (click)="goBack()">
-                <ion-icon name="arrow-back-outline"></ion-icon>
-                Back
-            </ion-button>
+            <ion-back-button defaultHref="/dashboard"></ion-back-button>
         </ion-buttons>
         <ion-title>Student User Management</ion-title>
     </ion-toolbar>
@@ -31,12 +28,10 @@
                     style="display: none;"
                     #fileInput
                     (change)="onFileSelected($event)"
+            <div class="bulk">
+                <input type="file" accept=".csv" style="display: none;" #fileInput (change)="onFileSelected($event)"
                     [disabled]="isUploading">
-                <ion-button
-                    (click)="fileInput.click()"
-                    [disabled]="isUploading"
-                    fill="outline"
-                    size="small">
+                <ion-button (click)="fileInput.click()" [disabled]="isUploading" fill="outline" size="small">
                     <ion-icon name="cloud-upload" slot="start"></ion-icon>
                     Bulk Upload CSV
                 </ion-button>
@@ -98,6 +93,35 @@
                         <ion-input type="password" [(ngModel)]="confirm" name="confirm" required></ion-input>
                     </ion-item>
                 </ng-template>
+                <ion-item>
+                    <ion-label position="floating">Email Address:</ion-label>
+                    <ion-input type="email" [(ngModel)]="email" name="email" placeholder="example@student.com"
+                        required></ion-input>
+                </ion-item>
+
+                <ion-item>
+                    <ion-label position="floating">Student ID:</ion-label>
+                    <ion-input type="text" [(ngModel)]="studentId" name="studentId" required
+                        placeholder="MMC20**-*****"></ion-input>
+                </ion-item>
+
+                <ion-item>
+                    <ion-label position="floating">Society:</ion-label>
+                    <ion-input type="text" [(ngModel)]="society" name="society" placeholder="Enter society"
+                        required></ion-input>
+                </ion-item>
+
+                <ion-item *ngIf="!isEditing">
+                    <ion-label position="floating">Password:</ion-label>
+                    <ion-input type="password" [(ngModel)]="password" name="password" placeholder="Enter password"
+                        required></ion-input>
+                </ion-item>
+
+                <ion-item *ngIf="!isEditing">
+                    <ion-label position="floating">Confirm Password:</ion-label>
+                    <ion-input type="password" [(ngModel)]="confirm" name="confirm" placeholder="Confirm password"
+                        required></ion-input>
+                </ion-item>
 
                 <ion-button expand="block" type="submit" class="ion-margin-top">
                     {{ isEditing ? 'Update Student' : 'Add Student' }}
@@ -125,6 +149,8 @@
 
             <ion-list>
                 <ion-item *ngFor="let user of filteredUsers">
+            <ion-list *ngIf="users && users.length > 0; else noUsers">
+                <ion-item *ngFor="let user of users">
                     <ion-label>
                         <h2>{{ user.fullName || user.email || 'Unknown' }}</h2>
                         <p><strong>Student ID:</strong> {{ user.studentId }}</p>
@@ -138,6 +164,13 @@
                     </ion-button>
                 </ion-item>
             </ion-list>
+
+            <ng-template #noUsers>
+                <p class="ion-text-center" style="margin-top: 20px; color: gray;">
+                    No student users found.
+                </p>
+            </ng-template>
         </ion-card-content>
     </ion-card>
+
 </ion-content>

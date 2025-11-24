@@ -1,16 +1,16 @@
 <ion-content>
   <div class="auth-container">
     <ion-card class="ion-padding" style="width: 100%; max-width: 400px;">
-      <ion-card-header class="ion-text-center">
-        <ion-icon name="person-add-outline" style="font-size: 48px; color: var(--ion-color-primary)"></ion-icon>
+      <ion-card-header class="ion-text-center header">
+        <ion-icon name="person-add-outline" class="icon" style="font-size: 48px; color: orange"></ion-icon>
         <ion-card-title class="ion-margin-top">Create Account</ion-card-title>
         <ion-card-subtitle>Join us — it only takes a minute</ion-card-subtitle>
       </ion-card-header>
 
       <ion-card-content>
         <div class="ion-margin-vertical">
-          <ion-item lines="none">
-            <ion-label position="stacked">Email</ion-label>
+          <ion-item lines="full" class="ion-margin-top email-address">
+            <ion-label position="stacked">Email Address</ion-label>
             <ion-input type="email" placeholder="Enter your email" [(ngModel)]="email" class="ion-margin-top"
               inputmode="email" aria-label="Email">
             </ion-input>
@@ -24,7 +24,7 @@
             <div *ngIf="societyId && !isSocietyIdValid()" class="validation">Society ID must be 3–30 characters; letters, numbers, dash and underscore allowed</div>
           <div *ngIf="email && !email.includes('@')" class="validation">Please enter a valid email address</div>
 
-          <ion-item lines="none" class="ion-margin-top password-item">
+          <ion-item lines="full">
             <ion-label position="stacked">Password</ion-label>
             <ion-input [type]="showPassword ? 'text' : 'password'" placeholder="Enter your password"
               [(ngModel)]="password" class="ion-margin-top" aria-label="Password">
@@ -36,7 +36,7 @@
           </ion-item>
           <div *ngIf="password && password.length < 6" class="validation">Password must be at least 6 characters</div>
 
-          <ion-item lines="none" class="ion-margin-top password-item">
+          <ion-item lines="full">
             <ion-label position="stacked">Confirm Password</ion-label>
             <ion-input [type]="showConfirm ? 'text' : 'password'" placeholder="Confirm your password"
               [(ngModel)]="confirm" class="ion-margin-top" aria-label="Confirm password">
@@ -51,21 +51,20 @@
         <ion-button expand="block" (click)="register()" class="gradient-button ion-margin-top"
           [disabled]="loading || password.length < 6 || !isSocietyIdValid()">
           <ion-spinner *ngIf="loading" name="dots" slot="start"></ion-spinner>
-          <ion-icon *ngIf="!loading" name="person-add-outline" slot="start"></ion-icon>
+          <!-- <ion-icon *ngIf="!loading" name="person-add-outline" slot="start"></ion-icon> -->
           <span *ngIf="!loading">Create Account</span>
         </ion-button>
 
         <div class="ion-text-center ion-margin-top">
           <ion-button expand="block" (click)="googleSignIn()" class="google-button">
-            <ion-icon name="logo-google" slot="start"></ion-icon>
-            Continue with Google
+            <img src="assets/icon/search.png" slot="start" class="google-icon" />
+            <span class="google-sign">Continue with Google</span>
           </ion-button>
         </div>
 
         <div class="ion-text-center ion-margin-top register-link-container">
-          <a routerLink="/home" class="register-pill">
-            <ion-icon name="log-in-outline"></ion-icon>
-            <span>Back to Login</span>
+          Have an account? <a routerLink="/home" class="register-pill">
+            Back to Login
           </a>
         </div>
       </ion-card-content>
