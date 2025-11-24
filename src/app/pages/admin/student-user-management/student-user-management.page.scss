@@ -16,6 +16,10 @@ ion-item h2 {
   font-weight: 600;
 }
 
+ion-card {
+  margin: 16px 20px;
+}
+
 ion-item p {
   font-size: 13px;
   color: #888;
@@ -23,4 +27,9 @@ ion-item p {
 
 .back-button {
   --color: var(--ion-color-primary);
+}
+
+.bulk {
+  position: relative;
+  margin: 14px 0;
 }

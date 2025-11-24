@@ -29,6 +29,10 @@
   --ion-color-secondary-contrast-rgb: 255, 255, 255;
   --ion-color-secondary-shade: #0ea472;
   --ion-color-secondary-tint: #28c08e;
+
+  --ion-color-tertiary: #c02828;
+
+  --ion-color-cancel: #757575;
 }
 
 // Custom styles
@@ -62,11 +66,14 @@ ion-input {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+  // background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+  background-color: white;
 }
 
 .gradient-button {
-  --background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
+  // --background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
+  --background: linear-gradient(135deg, orange 0%, rgb(255, 174, 0) 55%, yellow 100%);
+  margin-bottom: 18px;
 }
 
 .delete-toast {

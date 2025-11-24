@@ -1,8 +1,17 @@
+<ion-header>
+    <ion-toolbar>
+        <ion-buttons slot="start">
+            <ion-back-button defaultHref="/dashboard"></ion-back-button>
+        </ion-buttons>
+        <ion-title>Survey</ion-title>
+    </ion-toolbar>
+</ion-header>
+
 <ion-content>
     <div class="ion-padding">
         <ion-card class="survey-card">
             <ion-card-header class="ion-text-center">
-                <ion-icon name="clipboard-outline" style="font-size: 48px; color: var(--ion-color-primary)"></ion-icon>
+                <!-- <ion-icon name="clipboard-outline" style="font-size: 48px; color: var(--ion-color-primary)"></ion-icon> -->
                 <ion-card-title class="ion-margin-top">Feedback Survey</ion-card-title>
                 <ion-card-subtitle>Help us improve with your feedback</ion-card-subtitle>
             </ion-card-header>
@@ -56,8 +65,8 @@
                     </div>
 
                     <div class="form-group">
-                        <ion-label class="section-label">Rating / Satisfaction Level *</ion-label>
                         <div class="radio-container">
+                            <ion-label class="section-label">Rating / Satisfaction Level *</ion-label>
                             <ion-radio-group #ratingInput="ngModel" name="rating" [(ngModel)]="form.rating" required
                                 (ionChange)="onInputChange(ratingInput, 'rating')">
                                 <ion-item lines="none">
@@ -123,41 +132,40 @@
                         </div>
                     </div>
 
-                    <ion-item class="feature-item">
-                        <ion-label>
-                            <h2>Location</h2>
-                            <p *ngIf="latitude !== null && longitude !== null">Lat: {{latitude}} , Lng: {{longitude}}
+                    <div class="feature-block">
+                        <h2>Location</h2>
+                        <div class="location">
+                            <p *ngIf="latitude !== null && longitude !== null">
+                                Lat: {{ latitude }} , Lng: {{ longitude }}
                             </p>
-                            <p *ngIf="latitude === null" class="ion-text-wrap">No location captured - tap button to get
-                                your current location</p>
-                        </ion-label>
-                        <ion-button slot="end" (click)="getLocation()" [disabled]="gettingLocation"
-                            class="location-button">
+                            <p *ngIf="latitude === null" class="ion-text-wrap">
+                                No location captured - tap button to get your current location
+                            </p>
+                        </div>
+                        <ion-button expand="block" (click)="getLocation()" [disabled]="gettingLocation"
+                            class="location-button btn">
                             <ion-spinner *ngIf="gettingLocation" name="dots" slot="start"></ion-spinner>
                             <ion-icon *ngIf="!gettingLocation" name="location-outline" slot="start"></ion-icon>
                             <span *ngIf="!gettingLocation">Get Location</span>
                         </ion-button>
-                    </ion-item>
+                    </div>
                     <div *ngIf="submitted && (latitude === null || longitude === null)" class="validation">Location is
                         required — please tap "Get My Location" to capture coordinates before submitting.</div>
-
-                    <ion-item class="feature-item">
-                        <ion-label>
-                            <h2>Photo</h2>
-                            <div class="photo-preview">
-                                <div *ngIf="photoPreview"><img [src]="photoPreview" alt="Photo preview"
-                                        style="max-width:120px; max-height:120px;" /></div>
-                                <p *ngIf="!photoPreview" class="ion-text-wrap">No photo taken - tap button to capture an
-                                    image</p>
-                            </div>
-                        </ion-label>
-                        <ion-button slot="end" (click)="takePicture()" [disabled]="uploadingPhoto"
-                            class="camera-button">
+                    <div class="feature-block">
+                        <h2>Photo</h2>
+                        <div class="photo-preview">
+                            <img *ngIf="photoPreview" [src]="photoPreview" alt="Photo preview" />
+                            <p *ngIf="!photoPreview" class="ion-text-wrap">
+                                No photo taken - tap button to capture an image
+                            </p>
+                        </div>
+                        <ion-button expand="block" (click)="takePicture()" [disabled]="uploadingPhoto"
+                            class="photo-button btn">
                             <ion-spinner *ngIf="uploadingPhoto" name="dots" slot="start"></ion-spinner>
                             <ion-icon *ngIf="!uploadingPhoto" name="camera-outline" slot="start"></ion-icon>
                             <span *ngIf="!uploadingPhoto">Take Photo</span>
                         </ion-button>
-                    </ion-item>
+                    </div>
 
                     <ion-button type="submit" expand="block" class="gradient-button ion-margin-top"
                         [disabled]="submitting">
@@ -166,13 +174,6 @@
                         <span *ngIf="!submitting">Submit Survey</span>
                         <span *ngIf="submitting">Submitting...</span>
                     </ion-button>
-
-                    <div class="ion-text-center ion-margin-top register-link-container">
-                        <a (click)="goBack()" class="register-pill">
-                            <ion-icon name="arrow-back-outline"></ion-icon>
-                            <span>Back to Dashboard</span>
-                        </a>
-                    </div>
                 </form>
             </ion-card-content>
         </ion-card>

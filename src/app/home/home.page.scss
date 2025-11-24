@@ -34,13 +34,16 @@
 .register-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 24px;
-  background: linear-gradient(90deg, var(--ion-color-primary), var(--ion-color-secondary, #10c0d8));
-  color: white;
-  text-decoration: none;
-  box-shadow: 0 4px 10px rgba(16, 176, 255, 0.12);
+  // gap: 8px;
+  // margin-right: 8px;
+  // padding: 8px 14px;
+  // border-radius: 24px;
+  // background: linear-gradient(90deg, var(--ion-color-primary), var(--ion-color-secondary, #10c0d8));
+  position: relative;
+  margin: 6px 0 0 2px;
+  color: rgb(22, 138, 247);
+  text-decoration: underline;
+  // box-shadow: 0 4px 10px rgba(16, 176, 255, 0.12);
 }
 
 .register-pill ion-icon {
@@ -60,7 +63,7 @@ ion-item ion-button[slot="end"] {
 }
 
 ion-item ion-button[slot="end"] ion-icon {
-  font-size: 20px;
+  font-size: 26px;
   line-height: 1;
 }
 
@@ -70,6 +73,14 @@ ion-item ion-button[slot="end"] ion-icon {
 
 .password-item ion-input {
   padding-right: 0; /* avoid extra right padding so button sits flush */
+  // border: 1px solid gray;
+  // border-radius: 12px;
+}
+
+.email-address ion-input {
+  padding-right: 0; /* avoid extra right padding so button sits flush */
+  // border: 1px solid gray;
+  // border-radius: 12px;
 }
 
 .password-item ion-button[slot="end"] {
@@ -80,3 +91,24 @@ ion-item ion-button[slot="end"] ion-icon {
   align-items: center;
   justify-content: center;
 }
+
+// /
+.header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.ion-padding {
+  // box-shadow: none;
+  // padding: 4rem 4rem 4rem 4rem;
+  border: 1px solid #ccc;
+}
+.login-btn {
+  margin-top: 2rem;
+}
+// .eye {
+//   font-size: 24px;
+//   width: 24px;
+//   height: 24px;
+// }

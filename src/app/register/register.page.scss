@@ -51,10 +51,10 @@ ion-item ion-button[slot="end"] ion-icon {
 }
 
 /* Improved form validation indicators */
-ion-input.ion-valid {
-    --background: #f0fdf4;
-    border: 1px solid #22c55e00;
-}
+// ion-input.ion-valid {
+//     --background: #f0fdf4;
+//     border: 1px solid #22c55e00;
+// }
 
 ion-input.ion-invalid.ion-touched {
     --background: #fef2f2;
@@ -62,16 +62,33 @@ ion-input.ion-invalid.ion-touched {
 }
 
 ion-input, ion-textarea {
-    --padding-start: 16px !important;
     --padding-end: 16px !important;
     --padding-top: 12px !important;
-    --padding-bottom: 12px !important;
     font-size: 1rem !important;
     --placeholder-color: #94a3b8;
     --placeholder-opacity: 1;
     background: white;
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    // border: 1px solid #e2e8f0;
     margin-top: 4px;
     color: #1e293b;
+}
+//
+
+.header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.google-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+.google-sign {
+    margin-left: 10px;
+    font-size: 14px;
 }
