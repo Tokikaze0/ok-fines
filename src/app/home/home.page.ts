@@ -72,4 +72,8 @@ export class HomePage {
       this.login();
     }
   }
+
+  goToLanding() {
+    this.router.navigateByUrl('/landing');
+  }
 }

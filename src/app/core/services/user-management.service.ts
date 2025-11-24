@@ -13,6 +13,28 @@ export class UserManagementService {
   private firestore = getFirestore(this.app);
   private auth = getAuth(this.app);
 
+  // Normalize student ID formats and pad numeric part to 5 digits when appropriate.
+  // Examples:
+  //  - "MMC2025 - 00101" -> "MMC2025-00101"
+  //  - "MMC2021-0653" -> "MMC2021-00653"
+  private normalizeStudentId(raw: string): string | null {
+    if (!raw || typeof raw !== 'string') return null;
+    let s = raw.trim().toUpperCase();
+    s = s.replace(/\s*-\s*/g, '-');
+    s = s.replace(/\s+/g, '');
+
+    if (/^C\d+-\d+$/.test(s)) return s;
+    const m = s.match(/^MMC(\d{4})-(\d{4,5})$/);
+    if (m) {
+      const year = m[1];
+      let num = m[2];
+      if (num.length === 4) num = '0' + num;
+      return `MMC${year}-${num}`;
+    }
+    if (/^MMC\d{4}-\d{4}$/.test(s)) return s;
+    return null;
+  }
+
   /**
    * Create a new student user
    * @param email Student email
@@ -44,11 +66,12 @@ export class UserManagementService {
       society = extraFields.society || '';
     }
 
-    // Validate student ID format (allow multiple formats)
-    const studentIdRegex = /^MMC\d{4}-\d{4}$|^MMC20\d{2}-\d{5}$|^C\d+-\d+$/;
-    if (!studentIdRegex.test(studentId)) {
-      throw new Error('Invalid student ID format. Supported: MMC2021-0653, MMC2021-00653, C##-##');
+    // Normalize & validate student ID
+    const normalized = this.normalizeStudentId(studentId);
+    if (!normalized) {
+      throw new Error('Invalid student ID format. Supported examples: MMC2021-00653, MMC2024-00531, C12-34');
     }
+    studentId = normalized;
 
     const cred = await createUserWithEmailAndPassword(this.auth, email, password);
     const user = cred.user;
@@ -138,12 +161,13 @@ export class UserManagementService {
       throw new Error('Can only update student users');
     }
 
-    // Validate student ID if being updated
+    // Validate and normalize student ID if being updated
     if (data.studentId) {
-      const studentIdRegex = /^MMC20\d{2}-\d{5}$/;
-      if (!studentIdRegex.test(data.studentId)) {
-        throw new Error('Invalid student ID format. Must be MMC20**-*****');
+      const normalizedUpdate = this.normalizeStudentId(data.studentId as string);
+      if (!normalizedUpdate) {
+        throw new Error('Invalid student ID format. Must be MMC202*-00*** or C##-##');
       }
+      data.studentId = normalizedUpdate;
     }
 
     const userDocRef = doc(this.firestore, 'users', uid);
@@ -234,6 +258,10 @@ export class UserManagementService {
     for (const student of students) {
       try {
         // Accept all extra fields from student object, no email/password
+        // Normalize studentId coming from import
+        const normalized = this.normalizeStudentId(student.studentId || '');
+        if (!normalized) throw new Error('Invalid student ID: ' + (student.studentId || ''));
+        student.studentId = normalized;
         const studentData = {
           studentId: student.studentId,
           society: student.society || '',
@@ -274,5 +302,57 @@ export class UserManagementService {
       return docSnap.data() as User;
     }
     return null;
+  }
+
+  /**
+   * Get all students from the `students` collection (not Auth users)
+   */
+  async getAllStudentsFromCollection(): Promise<any[]> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No authenticated user found');
+    }
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    if (!currentUserDoc.exists()) {
+      throw new Error('User document not found');
+    }
+
+    const userData = currentUserDoc.data() as any;
+    if (userData.role !== 'admin') {
+      throw new Error('User is not an admin');
+    }
+
+    const societyId = userData.societyId || currentUser.uid;
+    const studentsRef = collection(this.firestore, 'students');
+    const q = query(studentsRef, where('societyId', '==', societyId));
+    const querySnapshot = await getDocs(q);
+
+    const students: any[] = querySnapshot.docs.map(d => {
+      const data = d.data();
+      const lastName = data['lastName'] || '';
+      const firstName = data['firstName'] || '';
+      const middleName = data['middleName'] || '';
+      return {
+        id: d.id,
+        ...data,
+        fullName: `${lastName}${lastName ? ', ' : ''}${firstName}${middleName ? ' ' + middleName : ''}`.trim()
+      } as any;
+    });
+
+    // sort by lastName then firstName
+    students.sort((a: any, b: any) => {
+      const la = ((a.lastName || '') as string).toString().toLowerCase();
+      const lb = ((b.lastName || '') as string).toString().toLowerCase();
+      if (la < lb) return -1;
+      if (la > lb) return 1;
+      const fa = ((a.firstName || '') as string).toString().toLowerCase();
+      const fb = ((b.firstName || '') as string).toString().toLowerCase();
+      if (fa < fb) return -1;
+      if (fa > fb) return 1;
+      return 0;
+    });
+
+    return students;
   }
 }

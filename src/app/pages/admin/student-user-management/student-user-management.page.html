@@ -116,10 +116,17 @@
             <ion-card-title>Student Users</ion-card-title>
         </ion-card-header>
         <ion-card-content>
+            <ion-searchbar
+                placeholder="Search by name or student ID"
+                [(ngModel)]="searchQuery"
+                (ionInput)="onSearch($event)"
+                showCancelButton="never">
+            </ion-searchbar>
+
             <ion-list>
-                <ion-item *ngFor="let user of users">
+                <ion-item *ngFor="let user of filteredUsers">
                     <ion-label>
-                        <h2>{{ user.email }}</h2>
+                        <h2>{{ user.fullName || user.email || 'Unknown' }}</h2>
                         <p><strong>Student ID:</strong> {{ user.studentId }}</p>
                         <p><strong>Society:</strong> {{ user.society }}</p>
                     </ion-label>
