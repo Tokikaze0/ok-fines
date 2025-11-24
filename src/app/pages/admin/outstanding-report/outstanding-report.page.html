@@ -8,15 +8,29 @@
 </ion-header>
 
 <ion-content class="ion-padding">
+
   <!-- Summary Card -->
   <ion-card>
     <ion-card-header>
-      <ion-card-title>Summary</ion-card-title>
+      <div class="summary-header">
+        <ion-card-title>Summary</ion-card-title>
+
+        <div class="summary-actions">
+          <ion-button fill="clear" size="large" (click)="exportCSV()">
+            <ion-icon name="download"></ion-icon>
+          </ion-button>
+
+          <ion-button fill="clear" size="large" (click)="printReport()">
+            <ion-icon name="print"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
     </ion-card-header>
+
     <ion-card-content>
-      <ion-row>
-        <ion-col>
-          <ion-card color="danger">
+      <ion-row class="equal-cards">
+        <ion-col size="6">
+          <ion-card color="danger" class="card-equal">
             <ion-card-content>
               <ion-text color="light">
                 <p>Total Outstanding</p>
@@ -25,8 +39,9 @@
             </ion-card-content>
           </ion-card>
         </ion-col>
-        <ion-col>
-          <ion-card color="medium">
+
+        <ion-col size="6">
+          <ion-card color="medium" class="card-equal">
             <ion-card-content>
               <ion-text color="light">
                 <p>Students</p>
@@ -36,26 +51,21 @@
           </ion-card>
         </ion-col>
       </ion-row>
-
-      <ion-button expand="block" fill="outline" (click)="exportCSV()" class="ion-margin-top">
-        <ion-icon name="download" slot="start"></ion-icon>
-        Export CSV
-      </ion-button>
-      <ion-button expand="block" fill="outline" (click)="printReport()" class="ion-margin-top">
-        <ion-icon name="print" slot="start"></ion-icon>
-        Print
-      </ion-button>
     </ion-card-content>
   </ion-card>
 
-  <!-- Search -->
-  <ion-searchbar placeholder="Search by ID, email, or society" [(ngModel)]="searchTerm" (ionChange)="onSearchChange()"></ion-searchbar>
-
-  <!-- Table -->
+  <!-- Students Card -->
   <ion-card>
-    <ion-card-header>
-      <ion-card-title>Students with Outstanding Balances</ion-card-title>
+    <ion-card-header class="student-header-2">
+      <!-- Title aligned to left -->
+      <ion-card-title class="student-title">Students with Outstanding Balances</ion-card-title>
+
+      <!-- Search bar below title -->
+      <ion-searchbar placeholder="Search by ID/email/society" [(ngModel)]="searchTerm" (ionChange)="onSearchChange()"
+        class="search-below-title">
+      </ion-searchbar>
     </ion-card-header>
+
     <ion-card-content>
       <ion-list *ngIf="filteredData.length > 0">
         <ion-item *ngFor="let student of filteredData" lines="full">
@@ -64,6 +74,7 @@
             <p>{{ student.email }}</p>
             <p *ngIf="student.society"><strong>Society:</strong> {{ student.society }}</p>
           </ion-label>
+
           <ion-badge color="danger" slot="end">
             <h3>₱{{ student.totalUnpaid.toFixed(2) }}</h3>
           </ion-badge>
@@ -75,10 +86,12 @@
       </ion-text>
     </ion-card-content>
   </ion-card>
+
 </ion-content>
 
 <style>
   @media print {
+
     ion-toolbar,
     ion-button,
     ion-searchbar {
