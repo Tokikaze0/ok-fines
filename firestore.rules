@@ -16,24 +16,18 @@ service cloud.firestore {
     // Users: authentication and role-based access control
     match /users/{userId} {
       allow create: if request.auth != null && (
-                     // Allow users to create their own account during registration
+                     // Self-create only own doc, disallow setting role
                      (request.auth.uid == userId &&
-                      request.resource.data.keys().hasAll(['email', 'role', 'uid']) &&
+                      request.resource.data.keys().hasAll(['email', 'uid']) &&
                       request.resource.data.uid == request.auth.uid &&
-                      request.resource.data.role in ['student', 'homeroom', 'admin']) ||
-                     // Allow admins to create new users
-                     (request.auth != null && 
-                      isAdmin() &&
+                      !request.resource.data.keys().hasAny(['role'])) ||
+                     // Admins can create with explicit role
+                     (isAdmin() &&
                       request.resource.data.keys().hasAll(['email', 'role', 'uid']) &&
                       request.resource.data.role in ['student', 'homeroom', 'admin'])
                    );
       
-      allow read: if request.auth != null && (
-                   // Users can read their own data
-                   request.auth.uid == userId ||
-                   // Admins can read all user data
-                   isAdmin()
-                 );
+      allow read: if true;
       
       allow update: if request.auth != null &&
                      isAdmin() &&
@@ -43,32 +37,7 @@ service cloud.firestore {
       allow delete: if request.auth != null && isAdmin();
     }
 
-    // Surveys: require authentication and validate fields
-    match /surveys/{surveyId} {
-      allow create: if request.auth != null
-                   && request.resource.data.userId == request.auth.uid
-                   && request.resource.data.keys().hasAll(['fullName', 'contact', 'rating', 'datetime', 'userId', 'latitude', 'longitude'])
-                   && request.resource.data.rating in ['1','2','3','4','5']
-                   && request.resource.data.latitude is number
-                   && request.resource.data.longitude is number
-                   && request.resource.data.latitude >= -90 && request.resource.data.latitude <= 90
-                   && request.resource.data.longitude >= -180 && request.resource.data.longitude <= 180
-                   && request.resource.data.keys().hasOnly(['fullName','contact','rating','comments','datetime','submittedAt','userId','latitude','longitude','imageUrl','imageData']);
-
-      allow read: if request.auth != null && (
-                    resource.data.userId == request.auth.uid ||
-                    isAdmin()
-                  );
-
-      allow update: if request.auth != null && 
-                     resource.data.userId == request.auth.uid;
-
-      allow delete: if request.auth != null && (
-                     resource.data.userId == request.auth.uid ||
-                     isAdmin()
-                   );
-    }
-
+    
     // Homerooms: created and managed by admins
     match /homerooms/{homeroomId} {
       allow create: if request.auth != null
@@ -89,57 +58,56 @@ service cloud.firestore {
       allow delete: if request.auth != null && isAdmin();
     }
 
-    // Fees: admin-managed contribution fees
+    // Fees: admin-managed contribution fees (applicable to all students)
     match /fees/{feeId} {
+      // Admin creates a fee; remove society scoping so all students are applicable
       allow create: if request.auth != null
                      && isAdmin()
                      && request.resource.data.keys().hasAll(['description', 'amount', 'createdAt', 'createdBy'])
                      && request.resource.data.createdBy == request.auth.uid
                      && request.resource.data.amount is number
                      && request.resource.data.amount > 0
-                     && request.resource.data.keys().hasOnly(['description', 'amount', 'createdAt', 'createdBy']);
+                     && request.resource.data.keys().hasOnly(['description', 'amount', 'createdAt', 'createdBy', 'societyId']);
 
-      allow read: if request.auth != null;
+      // Public can read fees to display in student portal
+      allow read: if true;
 
+      // Admin can update fee fields
       allow update: if request.auth != null
                      && isAdmin()
-                     && request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['description', 'amount'])
+                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['description', 'amount'])
                      && request.resource.data.amount is number
                      && request.resource.data.amount > 0
                      && request.resource.data.createdBy == resource.data.createdBy;
 
       allow delete: if request.auth != null && isAdmin();
 
-      allow list: if request.auth != null;
+      allow list: if true;
     }
 
-    // Payments: payment tracking with granular access control
+    // Payments: tracking with admin writes and public reads
     match /payments/{paymentId} {
+      // Admin creates payments (e.g., batch assign for all students)
       allow create: if request.auth != null
                      && isAdmin()
                      && request.resource.data.keys().hasAll(['studentId', 'feeId', 'status', 'createdAt'])
-                     && request.resource.data.status in ['paid', 'unpaid']
-                     && request.resource.data.keys().hasOnly(['studentId', 'feeId', 'status', 'createdAt', 'paidAt', 'paidBy', 'notes']);
+                     && request.resource.data.status in ['paid', 'unpaid', 'pending']
+                     && request.resource.data.keys().hasOnly(['studentId', 'feeId', 'status', 'createdAt', 'paidAt', 'paidBy', 'notes', 'societyId']);
 
-      allow read: if request.auth != null && (
-                    // Admins can read all payments
-                    isAdmin() ||
-                    // Students can only read their own payments (filtered by studentId)
-                    (resource.data.studentId == getUserData(request.auth.uid).studentId)
-                  );
+      // Public read for student portal and outstanding reports
+      allow read: if true;
 
+      // Admin can mark payments paid/unpaid/pending and annotate
       allow update: if request.auth != null
                      && isAdmin()
-                     && request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['status', 'paidAt', 'paidBy', 'notes'])
-                     && request.resource.data.status in ['paid', 'unpaid']
+                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'paidAt', 'paidBy', 'notes'])
+                     && request.resource.data.status in ['paid', 'unpaid', 'pending']
                      && request.resource.data.studentId == resource.data.studentId
                      && request.resource.data.feeId == resource.data.feeId;
 
       allow delete: if request.auth != null && isAdmin();
 
-      allow list: if request.auth != null;
+      allow list: if true;
     }
 
     // Students: bulk admin creation for student records

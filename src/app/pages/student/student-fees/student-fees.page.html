@@ -72,21 +72,38 @@
     </ion-card-content>
   </ion-card>
 
-  <!-- Fees List -->
+  <!-- Fees List Grouped -->
   <ion-card *ngIf="summary && !notFound">
     <ion-card-header>
       <ion-card-title>Contribution Fees</ion-card-title>
     </ion-card-header>
     <ion-card-content>
       <ion-list *ngIf="summary.payments.length > 0">
-        <ion-item *ngFor="let payment of summary.payments" lines="full">
+        <ion-item-divider color="success">Paid</ion-item-divider>
+        <ion-item *ngFor="let payment of paidPayments" lines="full">
           <ion-label>
             <h2>{{ getFeeForPayment(payment)?.description || 'Fee' }}</h2>
             <p>₱{{ getFeeAmount(payment) }}</p>
           </ion-label>
-          <ion-badge [color]="getPaymentStatusColor(payment)" slot="end">
-            {{ getPaymentStatus(payment) }}
-          </ion-badge>
+          <ion-badge color="success" slot="end">Paid</ion-badge>
+        </ion-item>
+
+        <ion-item-divider color="warning">Waiting to remit</ion-item-divider>
+        <ion-item *ngFor="let payment of pendingPayments" lines="full">
+          <ion-label>
+            <h2>{{ getFeeForPayment(payment)?.description || 'Fee' }}</h2>
+            <p>₱{{ getFeeAmount(payment) }}</p>
+          </ion-label>
+          <ion-badge color="warning" slot="end">Waiting to remit</ion-badge>
+        </ion-item>
+
+        <ion-item-divider color="danger">Unpaid</ion-item-divider>
+        <ion-item *ngFor="let payment of unpaidPayments" lines="full">
+          <ion-label>
+            <h2>{{ getFeeForPayment(payment)?.description || 'Fee' }}</h2>
+            <p>₱{{ getFeeAmount(payment) }}</p>
+          </ion-label>
+          <ion-badge color="danger" slot="end">Unpaid</ion-badge>
         </ion-item>
       </ion-list>
 

@@ -22,19 +22,19 @@
                 </ion-item>
                 
                 <!-- CSV upload button -->
-                <input
-                    type="file"
-                    accept=".csv"
-                    style="display: none;"
-                    #fileInput
-                    (change)="onFileSelected($event)"
-            <div class="bulk">
-                <input type="file" accept=".csv" style="display: none;" #fileInput (change)="onFileSelected($event)"
-                    [disabled]="isUploading">
-                <ion-button (click)="fileInput.click()" [disabled]="isUploading" fill="outline" size="small">
-                    <ion-icon name="cloud-upload" slot="start"></ion-icon>
-                    Bulk Upload CSV
-                </ion-button>
+                <div class="bulk">
+                  <input
+                      type="file"
+                      accept=".csv"
+                      style="display: none;"
+                      #fileInput
+                      (change)="onFileSelected($event)"
+                      [disabled]="isUploading">
+                  <ion-button (click)="fileInput.click()" [disabled]="isUploading" fill="outline" size="small">
+                      <ion-icon name="cloud-upload" slot="start"></ion-icon>
+                      Bulk Upload CSV
+                  </ion-button>
+                </div>
             </div>
         </ion-card-header>
         <ion-card-content>
@@ -93,35 +93,6 @@
                         <ion-input type="password" [(ngModel)]="confirm" name="confirm" required></ion-input>
                     </ion-item>
                 </ng-template>
-                <ion-item>
-                    <ion-label position="floating">Email Address:</ion-label>
-                    <ion-input type="email" [(ngModel)]="email" name="email" placeholder="example@student.com"
-                        required></ion-input>
-                </ion-item>
-
-                <ion-item>
-                    <ion-label position="floating">Student ID:</ion-label>
-                    <ion-input type="text" [(ngModel)]="studentId" name="studentId" required
-                        placeholder="MMC20**-*****"></ion-input>
-                </ion-item>
-
-                <ion-item>
-                    <ion-label position="floating">Society:</ion-label>
-                    <ion-input type="text" [(ngModel)]="society" name="society" placeholder="Enter society"
-                        required></ion-input>
-                </ion-item>
-
-                <ion-item *ngIf="!isEditing">
-                    <ion-label position="floating">Password:</ion-label>
-                    <ion-input type="password" [(ngModel)]="password" name="password" placeholder="Enter password"
-                        required></ion-input>
-                </ion-item>
-
-                <ion-item *ngIf="!isEditing">
-                    <ion-label position="floating">Confirm Password:</ion-label>
-                    <ion-input type="password" [(ngModel)]="confirm" name="confirm" placeholder="Confirm password"
-                        required></ion-input>
-                </ion-item>
 
                 <ion-button expand="block" type="submit" class="ion-margin-top">
                     {{ isEditing ? 'Update Student' : 'Add Student' }}
@@ -147,10 +118,8 @@
                 showCancelButton="never">
             </ion-searchbar>
 
-            <ion-list>
+            <ion-list *ngIf="filteredUsers && filteredUsers.length > 0; else noUsers">
                 <ion-item *ngFor="let user of filteredUsers">
-            <ion-list *ngIf="users && users.length > 0; else noUsers">
-                <ion-item *ngFor="let user of users">
                     <ion-label>
                         <h2>{{ user.fullName || user.email || 'Unknown' }}</h2>
                         <p><strong>Student ID:</strong> {{ user.studentId }}</p>
