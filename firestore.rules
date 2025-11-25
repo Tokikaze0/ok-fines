@@ -16,12 +16,13 @@ service cloud.firestore {
     // Users: authentication and role-based access control
     match /users/{userId} {
       allow create: if request.auth != null && (
-                     // Self-create only own doc, disallow setting role
+                     // Allow self-registration as admin with required fields
                      (request.auth.uid == userId &&
-                      request.resource.data.keys().hasAll(['email', 'uid']) &&
+                      request.resource.data.keys().hasAll(['email', 'role', 'uid', 'createdAt', 'societyId']) &&
                       request.resource.data.uid == request.auth.uid &&
-                      !request.resource.data.keys().hasAny(['role'])) ||
-                     // Admins can create with explicit role
+                      request.resource.data.role == 'admin' &&
+                      request.resource.data.keys().hasOnly(['email','role','uid','createdAt','societyId','displayName','provider','lastLogin'])) ||
+                     // Admins can create users with explicit role
                      (isAdmin() &&
                       request.resource.data.keys().hasAll(['email', 'role', 'uid']) &&
                       request.resource.data.role in ['student', 'homeroom', 'admin'])
@@ -32,7 +33,7 @@ service cloud.firestore {
       allow update: if request.auth != null &&
                      isAdmin() &&
                      request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['email', 'role', 'studentId', 'society', 'displayName']);
+                       .hasOnly(['email', 'role', 'studentId', 'society', 'displayName', 'lastLogin', 'provider', 'societyId']);
       
       allow delete: if request.auth != null && isAdmin();
     }
@@ -61,10 +62,12 @@ service cloud.firestore {
     // Fees: admin-managed contribution fees (applicable to all students)
     match /fees/{feeId} {
       // Admin creates a fee; remove society scoping so all students are applicable
+      // Admin must include their societyId, which must match their users/{uid}.societyId
       allow create: if request.auth != null
                      && isAdmin()
-                     && request.resource.data.keys().hasAll(['description', 'amount', 'createdAt', 'createdBy'])
+                     && request.resource.data.keys().hasAll(['description', 'amount', 'createdAt', 'createdBy', 'societyId'])
                      && request.resource.data.createdBy == request.auth.uid
+                     && request.resource.data.societyId == getUserData(request.auth.uid).societyId
                      && request.resource.data.amount is number
                      && request.resource.data.amount > 0
                      && request.resource.data.keys().hasOnly(['description', 'amount', 'createdAt', 'createdBy', 'societyId']);
@@ -73,12 +76,14 @@ service cloud.firestore {
       allow read: if true;
 
       // Admin can update fee fields
+      // Only allow updating description/amount; societyId and createdBy immutable
       allow update: if request.auth != null
                      && isAdmin()
-                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['description', 'amount'])
+                     && request.resource.data.diff(resource.data).changedKeys().hasOnly(['description', 'amount'])
                      && request.resource.data.amount is number
                      && request.resource.data.amount > 0
-                     && request.resource.data.createdBy == resource.data.createdBy;
+                     && request.resource.data.createdBy == resource.data.createdBy
+                     && request.resource.data.societyId == resource.data.societyId;
 
       allow delete: if request.auth != null && isAdmin();
 

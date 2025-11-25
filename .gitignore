@@ -72,4 +72,4 @@ Thumbs.db
 # Environments - do not push to GitHub
 /src/environments/
 
-.firestore.rules
+firestore.rules
