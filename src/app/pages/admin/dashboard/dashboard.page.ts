@@ -29,18 +29,11 @@ export class DashboardPage {
   async logout() {
     try {
       await this.auth.logout();
-      await this.router.navigate(['/home']);
+      await this.router.navigate(['/landing']);
       await this.showToast('Successfully logged out!');
     } catch (error) {
       console.error('Logout error:', error);
       await this.showToast('Error during logout. Please try again.', 'danger');
     }
-  }
-
-  openSurvey() {
-    this.router.navigate(['/survey']).catch(async err => {
-      console.error('Navigation error to /survey:', err);
-      await this.showToast('Could not open Survey. See console for details.', 'danger');
-    });
   }
 }

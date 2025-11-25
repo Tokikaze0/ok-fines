@@ -16,11 +16,7 @@ const routes: Routes = [
     loadChildren: () => import('./pages/admin/dashboard/dashboard.module').then(m => m.DashboardPageModule),
     canActivate: [AdminGuard]
   },
-  {
-    path: 'survey',
-    loadChildren: () => import('./survey/survey.module').then(m => m.SurveyPageModule)
-  },
-  {
+    {
     path: 'student-user-management',
     loadChildren: () => import('./pages/admin/student-user-management/student-user-management.module').then(m => m.StudentUserManagementPageModule),
     canActivate: [AdminGuard]

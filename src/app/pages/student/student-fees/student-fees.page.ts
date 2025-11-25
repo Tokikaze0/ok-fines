@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { PaymentService } from '@core/services/payment.service';
 import { StudentPaymentSummary, Payment, Fee } from '@core/models/fee.model';
 import { LoadingController, ToastController } from '@ionic/angular';
@@ -18,11 +19,20 @@ export class StudentFeesPage implements OnInit {
     constructor(
         private paymentService: PaymentService,
         private loadingCtrl: LoadingController,
-        private toastCtrl: ToastController
+        private toastCtrl: ToastController,
+        private route: ActivatedRoute
     ) { }
 
     ngOnInit() {
-        // Initialize component if needed
+        // If navigated with query param from Landing page, auto-search
+        this.route.queryParams.subscribe(params => {
+            const id = (params['studentId'] || '').toString();
+            if (id) {
+                this.studentId = id;
+                // delay to allow view init before loading indicator
+                setTimeout(() => this.searchStudent(), 0);
+            }
+        });
     }
 
     async searchStudent() {
@@ -50,11 +60,17 @@ export class StudentFeesPage implements OnInit {
     }
 
     getPaymentStatus(payment: Payment): string {
-        return payment.status === 'paid' ? 'Paid' : 'Unpaid';
+        const status: any = (payment as any).status;
+        if (status === 'paid') return 'Paid';
+        if (status === 'pending') return 'Waiting to remit';
+        return 'Unpaid';
     }
 
     getPaymentStatusColor(payment: Payment): string {
-        return payment.status === 'paid' ? 'success' : 'danger';
+        const status: any = (payment as any).status;
+        if (status === 'paid') return 'success';
+        if (status === 'pending') return 'warning';
+        return 'danger';
     }
 
     getFeeForPayment(payment: Payment): Fee | undefined {
@@ -65,6 +81,17 @@ export class StudentFeesPage implements OnInit {
     getFeeAmount(payment: Payment): string {
         const fee = this.getFeeForPayment(payment);
         return fee && fee.amount ? fee.amount.toFixed(2) : 'N/A';
+    }
+
+    // Helper groupings
+    get paidPayments(): Payment[] {
+        return this.summary ? this.summary.payments.filter(p => (p as any).status === 'paid') : [];
+    }
+    get unpaidPayments(): Payment[] {
+        return this.summary ? this.summary.payments.filter(p => (p as any).status === 'unpaid') : [];
+    }
+    get pendingPayments(): Payment[] {
+        return this.summary ? this.summary.payments.filter(p => (p as any).status === 'pending') : [];
     }
 
     private async showToast(message: string, color: string = 'success') {

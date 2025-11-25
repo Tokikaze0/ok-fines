@@ -33,17 +33,13 @@ export class FeeService {
     const currentUser = this.auth.currentUser;
     if (!currentUser) throw new Error('User not authenticated');
 
-    // get admin's societyId from users doc
-    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
-    const societyId = currentUserDoc.exists() ? currentUserDoc.data()['societyId'] || currentUser.uid : currentUser.uid;
-
+    // Fee applicable to all students (no society scoping)
     const feeData: Fee = {
       description,
       amount,
       createdAt: new Date().toISOString(),
-      createdBy: currentUser.uid,
-      societyId
-    };
+      createdBy: currentUser.uid
+    } as Fee;
 
     const docRef = await addDoc(collection(this.firestore, 'fees'), feeData);
     return docRef.id;
@@ -71,12 +67,9 @@ export class FeeService {
   async getAllFees(): Promise<Fee[]> {
     const currentUser = this.auth.currentUser;
     if (!currentUser) throw new Error('User not authenticated');
-    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
-    const societyId = currentUserDoc.exists() ? currentUserDoc.data()['societyId'] || currentUser.uid : currentUser.uid;
 
     const feesRef = collection(this.firestore, 'fees');
-    const q = query(feesRef, where('societyId', '==', societyId));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(feesRef);
     return snapshot.docs.map(doc => ({
       ...doc.data(),
       id: doc.id
@@ -87,27 +80,17 @@ export class FeeService {
    * Subscribe to real-time fee updates
    */
   subscribeFees(callback: (fees: Fee[]) => void): () => void {
-    // subscribe only to fees in the admin's society
     const currentUser = this.auth.currentUser;
     if (!currentUser) throw new Error('User not authenticated');
-    // create a listener promise (can't await in this sync function), so use onSnapshot on a query
-    // obtain societyId synchronously by reading user doc first
-    let societyId = currentUser.uid;
-    getDoc(doc(this.firestore, 'users', currentUser.uid)).then(userDoc => {
-      societyId = userDoc.exists() ? userDoc.data()['societyId'] || currentUser.uid : currentUser.uid;
-    }).finally(() => {
-      const feesRef = collection(this.firestore, 'fees');
-      const q = query(feesRef, where('societyId', '==', societyId));
-      onSnapshot(q, snapshot => {
-        const fees = snapshot.docs.map(doc => ({
-          ...doc.data(),
-          id: doc.id
-        } as Fee));
-        callback(fees);
-      });
+    const feesRef = collection(this.firestore, 'fees');
+    const unsub = onSnapshot(feesRef, snapshot => {
+      const fees = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      } as Fee));
+      callback(fees);
     });
-    // Return a noop unsubscribe - real unsubscribe requires capturing the listener, but caller can re-subscribe via getAllFees
-    return () => { /* listener unsubscribed by GC in this simple impl */ };
+    return unsub;
   }
 
   /**
@@ -117,27 +100,25 @@ export class FeeService {
     try {
       const currentUser = this.auth.currentUser;
       if (!currentUser) throw new Error('User not authenticated');
-      const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
-      const societyId = currentUserDoc.exists() ? currentUserDoc.data()['societyId'] || currentUser.uid : currentUser.uid;
 
+      // Fetch all students across all societies
       const studentsRef = collection(this.firestore, 'users');
-      const q = query(studentsRef, where('role', '==', 'student'), where('societyId', '==', societyId));
+      const q = query(studentsRef, where('role', '==', 'student'));
       const studentSnapshot = await getDocs(q);
 
       if (studentSnapshot.empty) return;
 
       const batch = writeBatch(this.firestore);
-      const paymentsRef = collection(this.firestore, 'payments');
 
       studentSnapshot.docs.forEach(studentDoc => {
         const studentData = studentDoc.data() as User;
         const paymentData: Payment = {
-          studentId: studentData.studentId || studentData.uid,
+          studentId: (studentData.studentId || (studentData as any).uid) as string,
           feeId,
           status: 'unpaid',
           createdAt: new Date().toISOString(),
-          societyId: studentData.societyId || societyId
-        };
+          societyId: (studentData as any).societyId
+        } as Payment;
 
         const newPaymentRef = doc(collection(this.firestore, 'payments'));
         batch.set(newPaymentRef, paymentData);
