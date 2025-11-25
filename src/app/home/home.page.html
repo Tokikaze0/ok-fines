@@ -6,7 +6,7 @@
           <ion-back-button defaultHref="/landing"></ion-back-button>
         </ion-buttons>
       </ion-toolbar>
-            <ion-card-header class="ion-text-center header">
+      <ion-card-header class="ion-text-center header">
         <div class="icon-container">
           <ion-icon name="shield-checkmark-outline" class="icon" style="font-size: 48px; color: orange"></ion-icon>
         </div>
@@ -24,8 +24,8 @@
 
           <ion-item lines="full" class="ion-margin-top password-item">
             <ion-label position="stacked">Password</ion-label>
-            <ion-input [type]="showPassword ? 'text' : 'password'" placeholder="********"
-              [(ngModel)]="password" class="ion-margin-top" aria-label="Password">
+            <ion-input [type]="showPassword ? 'text' : 'password'" placeholder="********" [(ngModel)]="password"
+              class="ion-margin-top" aria-label="Password">
               <ion-button fill="clear" size="small" slot="end" (click)="togglePassword()"
                 aria-label="Toggle password visibility">
                 <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'" class="eye"></ion-icon>
