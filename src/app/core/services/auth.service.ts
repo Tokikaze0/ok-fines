@@ -45,7 +45,9 @@ export class AuthService {
     if (role === 'homeroom') {
       this.router.navigate(['/homeroom-dashboard']);
     } else if (role === 'student') {
-      this.router.navigate(['/student-dashboard']);
+      // Redirect to student-fees with their studentId
+      const studentId = userData['studentId'];
+      this.router.navigate(['/student-fees'], { queryParams: { studentId } });
     } else if (role === 'admin') {
       this.router.navigate(['/dashboard']);
     } else {
@@ -143,5 +145,13 @@ export class AuthService {
     await this.storage.remove('access_token');
     await this.storage.remove('user_role');
     await this.router.navigate(['/login']).catch(() => this.router.navigate(['/']));
+  }
+
+  /**
+   * Get full user profile from Firestore
+   */
+  async getUserProfile(uid: string): Promise<any> {
+    const userDoc = await getDoc(doc(this.firestore, 'users', uid));
+    return userDoc.exists() ? userDoc.data() : null;
   }
 }

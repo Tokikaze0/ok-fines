@@ -65,44 +65,81 @@ export class ManageFeesPage implements OnInit, OnDestroy {
     await loader.present();
 
     try {
-      // If no students selected, confirm with admin
-      if (!this.selectedStudentIds.length) {
-        const confirm = await this.alertCtrl.create({
-          header: 'No students selected',
-          message: 'No students were selected. Create fee without assigning to students?',
-          buttons: [
-            { text: 'Cancel', role: 'cancel' },
-            {
-              text: 'Create anyway',
-              handler: async () => {
-                const feeId = await this.feeService.addFee(this.newFeeDescription, this.newFeeAmount!);
-                await this.feeService.createPaymentsForFee(feeId, undefined);
-                await this.showToast('Fee added successfully');
-                this.newFeeDescription = '';
-                this.newFeeAmount = null;
-                this.selectedStudentIds = [];
-                this.selectAll = false;
-              }
-            }
-          ]
-        });
-        await loader.dismiss();
-        await confirm.present();
-        return;
+      // Case 1: Specific students selected manually
+      if (this.selectedStudentIds.length > 0) {
+          const feeId = await this.feeService.addFee(this.newFeeDescription, this.newFeeAmount!);
+          await this.feeService.createPaymentsForFee(feeId, this.selectedStudentIds);
+          await this.finalizeAddFee();
+          await loader.dismiss();
+          return;
       }
 
-      const feeId = await this.feeService.addFee(this.newFeeDescription, this.newFeeAmount!);
-      await this.feeService.createPaymentsForFee(feeId, this.selectedStudentIds.length ? this.selectedStudentIds : undefined);
+      // Case 2: No manual selection, but filters are active (Target Audience)
+      if (this.filterYear || this.filterSection) {
+          const confirm = await this.alertCtrl.create({
+              header: 'Confirm Target Audience',
+              message: `Create fee for ${this.filterYear ? 'Year ' + this.filterYear : 'All Years'} ${this.filterSection ? 'Section ' + this.filterSection : ''}?`,
+              buttons: [
+                  { text: 'Cancel', role: 'cancel' },
+                  {
+                      text: 'Create',
+                      handler: async () => {
+                          const feeId = await this.feeService.addFee(
+                              this.newFeeDescription, 
+                              this.newFeeAmount!, 
+                              this.filterYear || undefined, 
+                              this.filterSection || undefined
+                          );
+                          
+                          // Pass fee data directly to avoid race condition
+                          const feeData: any = {
+                              targetYearLevel: this.filterYear || undefined,
+                              targetSection: this.filterSection || undefined
+                          };
+
+                          // Pass undefined for students so it uses the fee targets
+                          await this.feeService.createPaymentsForFee(feeId, undefined, feeData);
+                          await this.finalizeAddFee();
+                      }
+                  }
+              ]
+          });
+          await loader.dismiss();
+          await confirm.present();
+          return;
+      }
+
+      // Case 3: No selection, no filters -> All Students
+      const confirm = await this.alertCtrl.create({
+        header: 'No target selected',
+        message: 'This will create a fee for ALL students. Continue?',
+        buttons: [
+          { text: 'Cancel', role: 'cancel' },
+          {
+            text: 'Create for ALL',
+            handler: async () => {
+              const feeId = await this.feeService.addFee(this.newFeeDescription, this.newFeeAmount!);
+              await this.feeService.createPaymentsForFee(feeId, undefined);
+              await this.finalizeAddFee();
+            }
+          }
+        ]
+      });
+      await loader.dismiss();
+      await confirm.present();
+
+    } catch (error: any) {
+      await loader.dismiss();
+      await this.showToast(error.message || 'Error adding fee', 'danger');
+    }
+  }
+
+  async finalizeAddFee() {
       await this.showToast('Fee added successfully');
       this.newFeeDescription = '';
       this.newFeeAmount = null;
       this.selectedStudentIds = [];
       this.selectAll = false;
-      await loader.dismiss();
-    } catch (error: any) {
-      await loader.dismiss();
-      await this.showToast(error.message || 'Error adding fee', 'danger');
-    }
   }
 
   async loadStudents() {
@@ -130,13 +167,16 @@ export class ManageFeesPage implements OnInit, OnDestroy {
     this.selectAll = this.selectedStudentIds.length === this.getDisplayedStudents().length && this.getDisplayedStudents().length > 0;
   }
 
-  toggleSelectAll() {
+  toggleSelectAll(event?: any) {
+    // If triggered by event, use the checked state from event
+    if (event) {
+        this.selectAll = event.detail.checked;
+    }
+    
     if (this.selectAll) {
-      this.selectedStudentIds = [];
-      this.selectAll = false;
-    } else {
       this.selectedStudentIds = this.getDisplayedStudents().map(s => s.id);
-      this.selectAll = true;
+    } else {
+      this.selectedStudentIds = [];
     }
   }
 

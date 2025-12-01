@@ -109,7 +109,16 @@ export class HomeroomManagementPage implements OnInit {
     const loader = await this.loadingCtrl.create({ message: 'Creating account...' });
     await loader.present();
     try {
-      await this.userManagement.createHomeroomUser(email, pass, student.studentId, student.society);
+      // Pass extra fields (Year/Section) so the Homeroom Dashboard works
+      const extraData = {
+        society: student.society,
+        yearLevelId: student.yearLevelId,
+        sectionId: student.sectionId,
+        firstName: student.firstName,
+        lastName: student.lastName
+      };
+      
+      await this.userManagement.createHomeroomUser(email, pass, student.studentId, extraData);
       this.showToast('Homeroom account created');
       this.loadData();
     } catch (error: any) {

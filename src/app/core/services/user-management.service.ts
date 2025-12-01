@@ -193,14 +193,11 @@ export class UserManagementService {
     const userDocRef = doc(this.firestore, 'users', uid);
     await deleteDoc(userDocRef);
 
-    try {
-      const user = this.auth.currentUser;
-      if (user && user.uid === uid) {
-        await deleteUser(user);
-      }
-    } catch (error) {
-      console.error('Error deleting user from Authentication:', error);
-    }
+    // Note: We cannot delete the user from Authentication here because we are on the free plan
+    // and cannot use Cloud Functions. The user is effectively deleted because their
+    // Firestore profile is gone, preventing login.
+    // To fully remove from Auth, use the 'scripts/delete-auth-user.js' script.
+    console.log('User profile deleted. Run admin script to remove from Auth.');
   }
 
   /**
@@ -465,6 +462,71 @@ export class UserManagementService {
       const fb = ((b.firstName || '') as string).toString().toLowerCase();
       if (fa < fb) return -1;
       if (fa > fb) return 1;
+      return 0;
+    });
+
+    return students;
+  }
+
+  /**
+   * Get students filtered by Year Level and Section (for Homeroom)
+   */
+  async getStudentsBySection(yearLevelId: string | number, sectionId: string | number): Promise<any[]> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    const societyId = currentUserDoc.data()?.['societyId'];
+
+    if (!societyId) {
+        console.warn('getStudentsBySection: No societyId found for current user');
+        return [];
+    }
+
+    const studentsRef = collection(this.firestore, 'students');
+    
+    // Helper to execute query
+    const executeQuery = async (y: any, s: any) => {
+        const q = query(
+            studentsRef, 
+            where('societyId', '==', societyId),
+            where('yearLevelId', '==', y),
+            where('sectionId', '==', s)
+        );
+        return await getDocs(q);
+    }
+
+    // 1. Try exact match
+    let querySnapshot = await executeQuery(yearLevelId, sectionId);
+
+    // 2. If empty, try string conversion
+    if (querySnapshot.empty) {
+        querySnapshot = await executeQuery(String(yearLevelId), String(sectionId));
+    }
+
+    // 3. If empty and year is number-like, try number conversion
+    if (querySnapshot.empty && !isNaN(Number(yearLevelId))) {
+         querySnapshot = await executeQuery(Number(yearLevelId), String(sectionId));
+    }
+    
+    const students: any[] = querySnapshot.docs.map(d => {
+      const data = d.data();
+      const lastName = data['lastName'] || '';
+      const firstName = data['firstName'] || '';
+      const middleName = data['middleName'] || '';
+      return {
+        id: d.id,
+        ...data,
+        fullName: `${lastName}${lastName ? ', ' : ''}${firstName}${middleName ? ' ' + middleName : ''}`.trim()
+      } as any;
+    });
+
+    // sort by lastName then firstName
+    students.sort((a: any, b: any) => {
+      const la = ((a.lastName || '') as string).toString().toLowerCase();
+      const lb = ((b.lastName || '') as string).toString().toLowerCase();
+      if (la < lb) return -1;
+      if (la > lb) return 1;
       return 0;
     });
 

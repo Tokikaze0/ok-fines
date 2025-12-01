@@ -1,11 +1,42 @@
+ion-list {
+  background: transparent;
+  padding-top: 0;
+}
+
+ion-item {
+  --background: #ffffff;
+  --border-radius: 12px;
+  margin-bottom: 8px;
+  border: 1px solid #f3f4f6;
+  --padding-start: 16px;
+  --inner-padding-end: 16px;
+  --border-width: 0;
+}
+
 ion-item h2 {
   font-weight: 600;
   margin-bottom: 4px;
+  color: #111827;
 }
 
 ion-item p {
   font-size: 14px;
-  color: var(--ion-color-cancel);
+  color: #6b7280;
+}
+
+ion-badge {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+/* Nested card for edit mode */
+ion-card[color="light"] {
+  margin: 8px 0;
+  box-shadow: none;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
 }
 
 .btn {

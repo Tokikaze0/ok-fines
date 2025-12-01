@@ -78,9 +78,26 @@ export class PaymentService {
   }
 
   /**
+   * Get payments by fee ID
+   */
+  async getPaymentsByFee(feeId: string): Promise<Payment[]> {
+    try {
+      const societyId = await this.getCurrentUserSocietyIdOrThrow();
+
+      const paymentsRef = collection(this.firestore, this.COLLECTIONS.payments) as CollectionReference<DocumentData>;
+      const qRef = query(paymentsRef, where('feeId', '==', feeId), where('societyId', '==', societyId));
+      const snapshot = await this.runWithRetry(() => getDocs(qRef));
+      return snapshot.docs.map(d => ({ ...(d.data() as Payment), id: d.id }));
+    } catch (err) {
+      this.logger.error('Failed to fetch payments by fee', { feeId, err });
+      throw this.humanizeError(err, 'Unable to load fee payments');
+    }
+  }
+
+  /**
    * Update payment status with optional idempotency key to avoid duplicate processing
    */
-  async updatePaymentStatus(paymentId: string, status: 'paid' | 'unpaid', notes?: string, idempotencyKey?: string): Promise<void> {
+  async updatePaymentStatus(paymentId: string, status: 'paid' | 'unpaid' | 'pending', notes?: string, idempotencyKey?: string): Promise<void> {
     try {
       const currentUser = this.auth.currentUser;
       if (!currentUser) throw new Error('User not authenticated');
@@ -96,7 +113,7 @@ export class PaymentService {
       }
 
       const paymentRef = doc(this.firestore, this.COLLECTIONS.payments, paymentId);
-      const updateData: Partial<Payment> & { paidBy?: string; paidAt?: string | null; notes?: string; idempotencyKey?: string } = {
+      const updateData: any = {
         status,
         paidBy: currentUser.uid
       };
@@ -109,8 +126,10 @@ export class PaymentService {
 
       if (status === 'paid') {
         updateData.paidAt = new Date().toISOString();
+      } else if (status === 'pending') {
+        updateData.paidAt = null; // Pending is not fully paid yet
       } else {
-        updateData.paidAt = undefined;
+        updateData.paidAt = null;
       }
 
       if (notes) {
@@ -126,6 +145,40 @@ export class PaymentService {
     } catch (err) {
       this.logger.error('Failed to update payment status', { paymentId, status, err });
       throw this.humanizeError(err, 'Unable to update payment');
+    }
+  }
+
+  /**
+   * Create a payment record (if it doesn't exist)
+   */
+  async createPayment(payment: Payment): Promise<string> {
+    try {
+      const societyId = await this.getCurrentUserSocietyIdOrThrow();
+      const paymentsRef = collection(this.firestore, this.COLLECTIONS.payments);
+      
+      // Check if payment already exists
+      const q = query(
+        paymentsRef, 
+        where('studentId', '==', payment.studentId), 
+        where('feeId', '==', payment.feeId),
+        where('societyId', '==', societyId)
+      );
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        return snapshot.docs[0].id;
+      }
+
+      const docRef = await import('firebase/firestore').then(m => m.addDoc(paymentsRef, {
+        ...payment,
+        societyId,
+        createdAt: new Date().toISOString()
+      }));
+      
+      return docRef.id;
+    } catch (err) {
+      this.logger.error('Failed to create payment', err);
+      throw this.humanizeError(err, 'Unable to create payment');
     }
   }
 
@@ -153,13 +206,34 @@ export class PaymentService {
         studentData = studentSnapshot.docs[0].data() as User;
       }
       // Fetch payments filtered by the student's society
-      const payments = await (async () => {
+      const allPayments = await (async () => {
         const paymentsRef = collection(this.firestore, this.COLLECTIONS.payments) as CollectionReference<DocumentData>;
         const q2 = query(paymentsRef, where('studentId', '==', studentId), where('societyId', '==', (studentData as any).societyId || ''));
         const snapshot = await this.runWithRetry(() => getDocs(q2));
         return snapshot.docs.map(d => ({ ...(d.data() as Payment), id: d.id }));
       })();
       const fees = await this.feeService.getAllFees((studentData as any).societyId || '');
+
+      const studentYearLevel = String((studentData as any).yearLevelId || '');
+      const studentSection = String((studentData as any).sectionId || '');
+
+      // Filter payments based on fee targeting
+      // We only show payments that are:
+      // 1. Paid (always show history)
+      // 2. Unpaid/Pending AND the fee targets match the student
+      const payments = allPayments.filter(payment => {
+        const fee = fees.find(f => f.id === payment.feeId);
+        if (!fee) return false;
+
+        // If already paid, keep it
+        if (payment.status === 'paid') return true;
+
+        // Check targeting for unpaid/pending
+        if (fee.targetYearLevel && String(fee.targetYearLevel) !== studentYearLevel) return false;
+        if (fee.targetSection && String(fee.targetSection) !== studentSection) return false;
+
+        return true;
+      });
 
       // Calculate totals
       let totalPaid = 0;
@@ -199,52 +273,81 @@ export class PaymentService {
       // Only get unpaid payments for current admin's society
       const societyId = await this.getCurrentUserSocietyIdOrThrow();
 
-      const paymentsRef = collection(this.firestore, this.COLLECTIONS.payments) as CollectionReference<DocumentData>;
-      const qRef = query(paymentsRef, where('status', '==', 'unpaid'), where('societyId', '==', societyId));
-      const paymentSnapshot = await this.runWithRetry(() => getDocs(qRef));
-
-      if (paymentSnapshot.empty) return [];
-
-      const studentsMap = new Map<string, StudentPaymentSummary>();
+      // 1. Get all fees
       const fees = await this.feeService.getAllFees(societyId);
+      if (fees.length === 0) return [];
 
-      // Group payments by student
-      for (const paymentDoc of paymentSnapshot.docs) {
-        const payment = paymentDoc.data() as Payment;
-        payment.id = paymentDoc.id;
+      // 2. Get all students (from 'students' collection)
+      const studentsRef = collection(this.firestore, 'students');
+      const qStudents = query(studentsRef, where('societyId', '==', societyId));
+      const studentSnapshot = await this.runWithRetry(() => getDocs(qStudents));
+      
+      if (studentSnapshot.empty) return [];
 
-        if (!studentsMap.has(payment.studentId)) {
-          // Get student info from users collection
-          const usersRef = collection(this.firestore, this.COLLECTIONS.users) as CollectionReference<DocumentData>;
-          const q2 = query(usersRef, where('studentId', '==', payment.studentId), where('societyId', '==', societyId));
-          const studentSnapshot = await this.runWithRetry(() => getDocs(q2));
+      const students = studentSnapshot.docs.map(doc => doc.data() as User);
 
-          if (studentSnapshot.empty) continue;
+      // 3. Get all payments
+      const paymentsRef = collection(this.firestore, this.COLLECTIONS.payments);
+      const qPayments = query(paymentsRef, where('societyId', '==', societyId));
+      const paymentSnapshot = await this.runWithRetry(() => getDocs(qPayments));
+      
+      const payments = paymentSnapshot.docs.map(doc => {
+          const data = doc.data() as Payment;
+          data.id = doc.id;
+          return data;
+      });
 
-          const studentData = studentSnapshot.docs[0].data() as User;
-          const studentPayments = await this.getPaymentsByStudentId(payment.studentId);
+      const report: StudentPaymentSummary[] = [];
 
-          let totalUnpaid = 0;
-          studentPayments.forEach((p: Payment) => {
-            const fee = fees.find(f => f.id === p.feeId);
-            if (fee && p.status === 'unpaid') {
-              totalUnpaid += fee.amount;
+      // 4. Calculate balance for each student
+      for (const student of students) {
+        if (!student.studentId) continue;
+
+        const studentPayments = payments.filter(p => p.studentId === student.studentId);
+        let totalUnpaid = 0;
+        let totalPaid = 0;
+        const relevantPayments: Payment[] = [];
+
+        for (const fee of fees) {
+            // Check targeting
+            if (fee.targetYearLevel && String(student.yearLevelId) !== String(fee.targetYearLevel)) continue;
+            if (fee.targetSection && String(student.sectionId) !== String(fee.targetSection)) continue;
+
+            const payment = studentPayments.find(p => p.feeId === fee.id);
+            const isPaid = payment && payment.status === 'paid';
+
+            if (isPaid) {
+                totalPaid += fee.amount;
+                relevantPayments.push(payment!);
+            } else {
+                totalUnpaid += fee.amount;
+                // Create a virtual "unpaid" payment record for the report if one doesn't exist
+                relevantPayments.push(payment || {
+                    studentId: student.studentId!,
+                    feeId: fee.id!,
+                    status: 'unpaid',
+                    createdAt: new Date().toISOString(),
+                    societyId: societyId
+                });
             }
-          });
+        }
 
-          studentsMap.set(payment.studentId, {
-            studentId: payment.studentId,
-            email: (studentData as any).email,
-            society: (studentData as any).society,
-            totalPaid: 0,
-            totalUnpaid,
-            payments: studentPayments,
-            fees
-          });
+        if (totalUnpaid > 0) {
+            const fullName = student.fullName || (student.firstName && student.lastName ? `${student.firstName} ${student.lastName}` : undefined);
+            report.push({
+                studentId: student.studentId!,
+                fullName: fullName,
+                email: student.email || '',
+                society: student.society || '',
+                totalPaid,
+                totalUnpaid,
+                payments: relevantPayments,
+                fees: fees
+            });
         }
       }
 
-      return Array.from(studentsMap.values());
+      return report;
     } catch (err) {
       this.logger.error('Failed to get outstanding balance report', err);
       throw this.humanizeError(err, 'Unable to load outstanding report');

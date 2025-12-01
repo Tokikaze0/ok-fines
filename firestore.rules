@@ -16,6 +16,12 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(uid)).data;
     }
 
+    // Check if the authenticated user is a homeroom officer
+    function isHomeroom() {
+      return request.auth != null
+             && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'homeroom';
+    }
+
     // --- COLLECTIONS ---
 
     // USERS: Profiles for Admin, Student, and Homeroom accounts
@@ -23,7 +29,7 @@ service cloud.firestore {
       // 1. Allow users to read their own profile
       // 2. Allow Admins to read all profiles
       // 3. Allow public read of 'student' profiles (for ID lookup)
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin())
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin() || isHomeroom())
                   || (resource.data.role == 'student');
 
       // Create: 
@@ -44,11 +50,14 @@ service cloud.firestore {
 
     // STUDENTS: The raw student data (Collection-only, no Auth required)
     match /students/{studentId} {
-      // Public read for the Landing Page lookup
+      // Public read for the Landing Page lookup (Get only)
       allow get: if true;
       
-      // Admins can do everything else (List, Create, Update, Delete)
-      allow list, create, update, delete: if isAdmin();
+      // Admins and Homeroom can read (list/get)
+      allow read: if isAdmin() || isHomeroom();
+      
+      // Only Admins can write
+      allow write: if isAdmin();
     }
 
     // FEES: Contribution fees
@@ -66,7 +75,9 @@ service cloud.firestore {
       allow read: if true;
 
       // Admins can manage payments
-      allow create, update, delete: if isAdmin();
+      // Homeroom can create and update (for collecting fees)
+      allow create, update: if isAdmin() || isHomeroom();
+      allow delete: if isAdmin();
     }
 
     // HOMEROOMS: (Legacy/Future use)

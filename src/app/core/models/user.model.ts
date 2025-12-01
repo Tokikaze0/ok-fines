@@ -11,6 +11,11 @@ export interface User {
   studentId?: string; // Format: MMC20**-*****
   society?: string;
   societyId?: string; // Unique identifier for admin/society
+  yearLevelId?: string;
+  sectionId?: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string; // Helper for display
 }
 
 /**

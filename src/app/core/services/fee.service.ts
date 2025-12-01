@@ -29,7 +29,7 @@ export class FeeService {
   /**
    * Add a new fee
    */
-  async addFee(description: string, amount: number): Promise<string> {
+  async addFee(description: string, amount: number, targetYearLevel?: string, targetSection?: string): Promise<string> {
     const currentUser = this.auth.currentUser;
     if (!currentUser) throw new Error('User not authenticated');
 
@@ -43,8 +43,10 @@ export class FeeService {
       amount,
       createdAt: new Date().toISOString(),
       createdBy: currentUser!.uid,
-      societyId: societyId
-    } as Fee;
+      societyId: societyId,
+      targetYearLevel: targetYearLevel || null,
+      targetSection: targetSection || null
+    } as any;
 
     const docRef = await addDoc(collection(this.firestore, 'fees'), feeData);
     return docRef.id;
@@ -117,11 +119,18 @@ export class FeeService {
   /**
    * Subscribe to real-time fee updates
    */
-  subscribeFees(callback: (fees: Fee[]) => void): () => void {
+  subscribeFees(callback: (fees: Fee[]) => void, societyId?: string): () => void {
     const currentUser = this.auth.currentUser;
     if (!currentUser) throw new Error('User not authenticated');
     const feesRef = collection(this.firestore, 'fees');
-    const q = query(feesRef, where('createdBy', '==', currentUser.uid));
+    
+    let q;
+    if (societyId) {
+      q = query(feesRef, where('societyId', '==', societyId));
+    } else {
+      q = query(feesRef, where('createdBy', '==', currentUser.uid));
+    }
+
     const unsub = onSnapshot(q, snapshot => {
       const fees = snapshot.docs.map(doc => ({
         ...doc.data(),
@@ -135,7 +144,7 @@ export class FeeService {
   /**
    * Create default payment records for all students when a new fee is added
    */
-  async createPaymentsForFee(feeId: string, studentIds?: string[]): Promise<void> {
+  async createPaymentsForFee(feeId: string, studentIds?: string[], feeDataOverride?: Fee): Promise<void> {
     try {
       const currentUser = this.auth.currentUser;
       if (!currentUser) throw new Error('User not authenticated');
@@ -162,15 +171,35 @@ export class FeeService {
           batch.set(newPaymentRef, paymentData);
         }
       } else {
-        // Fallback: create payments for all student auth users (existing behavior)
-        const studentsRef = collection(this.firestore, 'users');
-        const q = query(studentsRef, where('role', '==', 'student'));
+        // Check if Fee has targeting
+        let feeData = feeDataOverride;
+        if (!feeData) {
+            const feeDoc = await getDoc(doc(this.firestore, 'fees', feeId));
+            feeData = feeDoc.exists() ? feeDoc.data() as Fee : undefined;
+        }
+
+        const studentsRef = collection(this.firestore, 'students'); // Use students collection for better filtering
+        let q;
+
+        if (feeData && (feeData.targetYearLevel || feeData.targetSection)) {
+            // Target specific group
+            const constraints: any[] = [where('societyId', '==', adminSocietyId)];
+            if (feeData.targetYearLevel) constraints.push(where('yearLevelId', '==', feeData.targetYearLevel));
+            if (feeData.targetSection) constraints.push(where('sectionId', '==', feeData.targetSection));
+            
+            q = query(studentsRef, ...constraints);
+        } else {
+            // Fallback: All students in society
+            q = query(studentsRef, where('societyId', '==', adminSocietyId));
+        }
+
         const studentSnapshot = await getDocs(q);
         if (studentSnapshot.empty) return;
+
         studentSnapshot.docs.forEach(studentDoc => {
           const studentData = studentDoc.data() as any;
           const paymentData: Payment = {
-            studentId: (studentData.studentId || studentData.uid) as string,
+            studentId: studentData.studentId,
             feeId,
             status: 'unpaid',
             createdAt: new Date().toISOString(),
