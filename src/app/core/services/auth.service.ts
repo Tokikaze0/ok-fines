@@ -13,7 +13,7 @@ import { Router } from '@angular/router';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private app = initializeApp(environment.firebaseConfig);
-  private auth = getAuth(this.app);
+  public auth = getAuth(this.app);
   private firestore = getFirestore(this.app);
 
   constructor(private storage: StorageService, private router: Router) {}

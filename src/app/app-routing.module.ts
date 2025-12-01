@@ -56,6 +56,10 @@ const routes: Routes = [
     path: '',
     redirectTo: 'landing',
     pathMatch: 'full'
+  },
+  {
+    path: 'homeroom-management',
+    loadChildren: () => import('./pages/admin/homeroom-management/homeroom-management.module').then( m => m.HomeroomManagementPageModule)
   }
 ];
 

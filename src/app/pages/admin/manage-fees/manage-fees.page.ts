@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FeeService } from '@core/services/fee.service';
+import { UserManagementService } from '@core/services/user-management.service';
 import { Fee } from '@core/models/fee.model';
 import { AlertController, LoadingController, ToastController, ModalController } from '@ionic/angular';
 
@@ -13,6 +14,13 @@ export class ManageFeesPage implements OnInit, OnDestroy {
   fees: Fee[] = [];
   isLoading = false;
   unsubscribe?: () => void;
+  students: any[] = [];
+  selectedStudentIds: string[] = [];
+  selectAll = false;
+  yearLevels: string[] = [];
+  sections: string[] = [];
+  filterYear: string | null = null;
+  filterSection: string | null = null;
   
   newFeeDescription = '';
   newFeeAmount: number | null = null;
@@ -22,6 +30,7 @@ export class ManageFeesPage implements OnInit, OnDestroy {
 
   constructor(
     private feeService: FeeService,
+    private userMgmt: UserManagementService,
     private alertCtrl: AlertController,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController
@@ -29,6 +38,7 @@ export class ManageFeesPage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadFees();
+    this.loadStudents();
   }
 
   ngOnDestroy() {
@@ -55,16 +65,87 @@ export class ManageFeesPage implements OnInit, OnDestroy {
     await loader.present();
 
     try {
-      const feeId = await this.feeService.addFee(this.newFeeDescription, this.newFeeAmount);
-      await this.feeService.createPaymentsForFee(feeId);
+      // If no students selected, confirm with admin
+      if (!this.selectedStudentIds.length) {
+        const confirm = await this.alertCtrl.create({
+          header: 'No students selected',
+          message: 'No students were selected. Create fee without assigning to students?',
+          buttons: [
+            { text: 'Cancel', role: 'cancel' },
+            {
+              text: 'Create anyway',
+              handler: async () => {
+                const feeId = await this.feeService.addFee(this.newFeeDescription, this.newFeeAmount!);
+                await this.feeService.createPaymentsForFee(feeId, undefined);
+                await this.showToast('Fee added successfully');
+                this.newFeeDescription = '';
+                this.newFeeAmount = null;
+                this.selectedStudentIds = [];
+                this.selectAll = false;
+              }
+            }
+          ]
+        });
+        await loader.dismiss();
+        await confirm.present();
+        return;
+      }
+
+      const feeId = await this.feeService.addFee(this.newFeeDescription, this.newFeeAmount!);
+      await this.feeService.createPaymentsForFee(feeId, this.selectedStudentIds.length ? this.selectedStudentIds : undefined);
       await this.showToast('Fee added successfully');
       this.newFeeDescription = '';
       this.newFeeAmount = null;
+      this.selectedStudentIds = [];
+      this.selectAll = false;
       await loader.dismiss();
     } catch (error: any) {
       await loader.dismiss();
       await this.showToast(error.message || 'Error adding fee', 'danger');
     }
+  }
+
+  async loadStudents() {
+    try {
+      this.students = await this.userMgmt.getAllStudentsFromCollection();
+      // build unique lists for filters
+      const years = new Set<string>();
+      const secs = new Set<string>();
+      this.students.forEach(s => {
+        if (s.yearLevelId) years.add(String(s.yearLevelId));
+        if (s.sectionId) secs.add(String(s.sectionId));
+      });
+      this.yearLevels = Array.from(years).sort();
+      this.sections = Array.from(secs).sort();
+    } catch (err) {
+      console.warn('Could not load students for selection:', err);
+      this.students = [];
+    }
+  }
+
+  toggleStudentSelection(studentId: string) {
+    const idx = this.selectedStudentIds.indexOf(studentId);
+    if (idx === -1) this.selectedStudentIds.push(studentId);
+    else this.selectedStudentIds.splice(idx, 1);
+    this.selectAll = this.selectedStudentIds.length === this.getDisplayedStudents().length && this.getDisplayedStudents().length > 0;
+  }
+
+  toggleSelectAll() {
+    if (this.selectAll) {
+      this.selectedStudentIds = [];
+      this.selectAll = false;
+    } else {
+      this.selectedStudentIds = this.getDisplayedStudents().map(s => s.id);
+      this.selectAll = true;
+    }
+  }
+
+  getDisplayedStudents() {
+    return this.students.filter(s => {
+      if (this.filterYear && String(s.yearLevelId) !== String(this.filterYear)) return false;
+      if (this.filterSection && String(s.sectionId) !== String(this.filterSection)) return false;
+      return true;
+    });
   }
 
   async editFee(fee: Fee) {
@@ -110,7 +191,9 @@ export class ManageFeesPage implements OnInit, OnDestroy {
               const loader = await this.loadingCtrl.create({ message: 'Deleting...' });
               await loader.present();
               try {
-                await this.feeService.deleteFee(fee.id);
+                    // Ensure current user has permission (gives clearer errors)
+                    await this.feeService.ensureCanDeleteFee(fee.id);
+                    await this.feeService.deleteFee(fee.id);
                 await this.showToast('Fee deleted successfully');
                 await loader.dismiss();
               } catch (error: any) {

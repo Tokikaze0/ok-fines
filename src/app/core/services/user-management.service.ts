@@ -13,6 +13,10 @@ export class UserManagementService {
   private firestore = getFirestore(this.app);
   private auth = getAuth(this.app);
 
+  // Secondary app for creating users without logging out the admin
+  private secondaryApp = initializeApp(environment.firebaseConfig, 'SecondaryApp');
+  private secondaryAuth = getAuth(this.secondaryApp);
+
   // Normalize student ID formats and pad numeric part to 5 digits when appropriate.
   // Examples:
   //  - "MMC2025 - 00101" -> "MMC2025-00101"
@@ -73,8 +77,12 @@ export class UserManagementService {
     }
     studentId = normalized;
 
-    const cred = await createUserWithEmailAndPassword(this.auth, email, password);
+    // Use secondaryAuth to create user so the admin stays logged in
+    const cred = await createUserWithEmailAndPassword(this.secondaryAuth, email, password);
     const user = cred.user;
+
+    // Sign out the secondary user immediately to clean up
+    await this.secondaryAuth.signOut();
 
     const societyId = adminData['societyId'] || currentUser.uid;
     const userData: User = {
@@ -292,6 +300,28 @@ export class UserManagementService {
   }
 
   /**
+   * Update a student in the collection
+   */
+  async updateStudentInCollection(studentId: string, data: any): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const studentDocRef = doc(this.firestore, 'students', studentId);
+    await updateDoc(studentDocRef, data);
+  }
+
+  /**
+   * Delete a student from the collection
+   */
+  async deleteStudentFromCollection(studentId: string): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const studentDocRef = doc(this.firestore, 'students', studentId);
+    await deleteDoc(studentDocRef);
+  }
+
+  /**
    * Get a single student user by ID
    */
   async getStudentUser(uid: string): Promise<User | null> {
@@ -302,6 +332,91 @@ export class UserManagementService {
       return docSnap.data() as User;
     }
     return null;
+  }
+
+  /**
+   * Create a new homeroom user
+   */
+  async createHomeroomUser(email: string, password: string, studentId: string, society: any): Promise<User> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    if (!currentUserDoc.exists() || currentUserDoc.data()['role'] !== 'admin') {
+      throw new Error('Only admin users can create homeroom users');
+    }
+
+    let extraFields: any = {};
+    if (typeof society === 'object' && society !== null) {
+      extraFields = society;
+      society = extraFields.society || '';
+    }
+
+    const normalized = this.normalizeStudentId(studentId);
+    if (!normalized) throw new Error('Invalid student ID format');
+    studentId = normalized;
+
+    // Use secondaryAuth to create user so the admin stays logged in
+    const cred = await createUserWithEmailAndPassword(this.secondaryAuth, email, password);
+    const user = cred.user;
+
+    // Sign out the secondary user immediately to clean up
+    await this.secondaryAuth.signOut();
+
+    const societyId = currentUserDoc.data()['societyId'] || currentUser.uid;
+    const userData: User = {
+      uid: user.uid,
+      email: email,
+      role: 'homeroom',
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser.uid,
+      studentId: studentId,
+      society: society,
+      societyId,
+      ...extraFields
+    };
+
+    const userDocRef = doc(this.firestore, 'users', user.uid);
+    await setDoc(userDocRef, userData);
+
+    return userData;
+  }
+
+  /**
+   * Update user role
+   */
+  async updateUserRole(uid: string, newRole: 'student' | 'homeroom'): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    if (!currentUserDoc.exists() || currentUserDoc.data()['role'] !== 'admin') {
+      throw new Error('Only admin users can update roles');
+    }
+
+    const userDocRef = doc(this.firestore, 'users', uid);
+    await updateDoc(userDocRef, { role: newRole });
+  }
+
+  /**
+   * Get all users in society (students and homeroom)
+   */
+  async getAllUsersInSociety(): Promise<User[]> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    if (!currentUserDoc.exists()) throw new Error('User document not found');
+
+    const societyId = currentUserDoc.data()['societyId'] || currentUser.uid;
+    const usersRef = collection(this.firestore, 'users');
+    const q = query(usersRef, where('societyId', '==', societyId));
+    const querySnapshot = await getDocs(q);
+    
+    // Filter out the admin themselves if needed, or just return all
+    return querySnapshot.docs
+      .map(doc => ({ ...doc.data(), uid: doc.id } as User))
+      .filter(u => u.role !== 'admin');
   }
 
   /**

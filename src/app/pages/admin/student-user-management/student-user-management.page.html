@@ -10,30 +10,20 @@
 <ion-content>
     <ion-card>
         <ion-card-header class="ion-justify-content-between" style="display: flex; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <ion-card-title>{{ isEditing ? 'Edit Student' : 'Add New Student User' }}</ion-card-title>
+            <ion-card-title>{{ isEditing ? 'Edit Student' : 'Add New Student' }}</ion-card-title>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-                <!-- Bulk import mode selector -->
-                <ion-item style="flex: 1; min-width: 200px;">
-                    <ion-label>Import Mode:</ion-label>
-                    <ion-select [(ngModel)]="bulkImportMode" name="importMode">
-                        <ion-select-option value="collection">Collection Only</ion-select-option>
-                        <ion-select-option value="auth">With Auth Accounts</ion-select-option>
-                    </ion-select>
-                </ion-item>
-                
-                <!-- CSV upload button -->
                 <div class="bulk">
-                  <input
-                      type="file"
-                      accept=".csv"
-                      style="display: none;"
-                      #fileInput
-                      (change)="onFileSelected($event)"
-                      [disabled]="isUploading">
-                  <ion-button (click)="fileInput.click()" [disabled]="isUploading" fill="outline" size="small">
-                      <ion-icon name="cloud-upload" slot="start"></ion-icon>
-                      Bulk Upload CSV
-                  </ion-button>
+                    <input
+                            type="file"
+                            accept=".csv"
+                            style="display: none;"
+                            #fileInput
+                            (change)="onFileSelected($event)"
+                            [disabled]="isUploading">
+                    <ion-button (click)="fileInput.click()" [disabled]="isUploading" fill="outline" size="small">
+                            <ion-icon name="cloud-upload" slot="start"></ion-icon>
+                            Bulk Upload CSV
+                    </ion-button>
                 </div>
             </div>
         </ion-card-header>
@@ -41,58 +31,34 @@
             <form (ngSubmit)="isEditing ? updateUser() : addUser()">
 
                 <!-- Collection Only mode: show only CSV fields -->
-                <ng-container *ngIf="bulkImportMode === 'collection'; else authFields">
-                    <ion-item>
-                        <ion-label position="floating">Last Name</ion-label>
-                        <ion-input type="text" [(ngModel)]="lastName" name="lastName" required></ion-input>
-                    </ion-item>
-                    <ion-item>
-                        <ion-label position="floating">First Name</ion-label>
-                        <ion-input type="text" [(ngModel)]="firstName" name="firstName" required></ion-input>
-                    </ion-item>
-                    <ion-item>
-                        <ion-label position="floating">Middle Name</ion-label>
-                        <ion-input type="text" [(ngModel)]="middleName" name="middleName"></ion-input>
-                    </ion-item>
-                    <ion-item>
-                        <ion-label position="floating">Student ID</ion-label>
-                        <ion-input type="text" [(ngModel)]="studentId" name="studentId" required placeholder="MMC20**-*****"></ion-input>
-                    </ion-item>
-                    <ion-item>
-                        <ion-label position="floating">Society</ion-label>
-                        <ion-input type="text" [(ngModel)]="society" name="society" required></ion-input>
-                    </ion-item>
-                    <ion-item>
-                        <ion-label position="floating">Program ID</ion-label>
-                        <ion-input type="text" [(ngModel)]="programId" name="programId"></ion-input>
-                    </ion-item>
-                    <ion-item>
-                        <ion-label position="floating">College ID</ion-label>
-                        <ion-input type="text" [(ngModel)]="collegeId" name="collegeId"></ion-input>
-                    </ion-item>
-                </ng-container>
-                <ng-template #authFields>
-                    <ion-item>
-                        <ion-label position="floating">Email</ion-label>
-                        <ion-input type="email" [(ngModel)]="email" name="email" required></ion-input>
-                    </ion-item>
-                    <ion-item>
-                        <ion-label position="floating">Student ID</ion-label>
-                        <ion-input type="text" [(ngModel)]="studentId" name="studentId" required placeholder="MMC20**-*****"></ion-input>
-                    </ion-item>
-                    <ion-item>
-                        <ion-label position="floating">Society</ion-label>
-                        <ion-input type="text" [(ngModel)]="society" name="society" required></ion-input>
-                    </ion-item>
-                    <ion-item *ngIf="!isEditing">
-                        <ion-label position="floating">Password</ion-label>
-                        <ion-input type="password" [(ngModel)]="password" name="password" required></ion-input>
-                    </ion-item>
-                    <ion-item *ngIf="!isEditing">
-                        <ion-label position="floating">Confirm Password</ion-label>
-                        <ion-input type="password" [(ngModel)]="confirm" name="confirm" required></ion-input>
-                    </ion-item>
-                </ng-template>
+                <ion-item>
+                    <ion-label position="floating">Last Name</ion-label>
+                    <ion-input type="text" [(ngModel)]="lastName" name="lastName" required></ion-input>
+                </ion-item>
+                <ion-item>
+                    <ion-label position="floating">First Name</ion-label>
+                    <ion-input type="text" [(ngModel)]="firstName" name="firstName" required></ion-input>
+                </ion-item>
+                <ion-item>
+                    <ion-label position="floating">Middle Name</ion-label>
+                    <ion-input type="text" [(ngModel)]="middleName" name="middleName"></ion-input>
+                </ion-item>
+                <ion-item>
+                    <ion-label position="floating">Student ID</ion-label>
+                    <ion-input type="text" [(ngModel)]="studentId" name="studentId" required placeholder="MMC20**-*****"></ion-input>
+                </ion-item>
+                <ion-item>
+                    <ion-label position="floating">Society</ion-label>
+                    <ion-input type="text" [(ngModel)]="society" name="society" required></ion-input>
+                </ion-item>
+                <ion-item>
+                    <ion-label position="floating">Program ID</ion-label>
+                    <ion-input type="text" [(ngModel)]="programId" name="programId"></ion-input>
+                </ion-item>
+                <ion-item>
+                    <ion-label position="floating">College ID</ion-label>
+                    <ion-input type="text" [(ngModel)]="collegeId" name="collegeId"></ion-input>
+                </ion-item>
 
                 <ion-button expand="block" type="submit" class="ion-margin-top">
                     {{ isEditing ? 'Update Student' : 'Add Student' }}

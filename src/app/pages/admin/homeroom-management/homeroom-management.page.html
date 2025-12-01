@@ -1,0 +1,50 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Homeroom Management</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Manage Homeroom Accounts</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-searchbar
+        placeholder="Search by name or ID"
+        [(ngModel)]="searchQuery"
+        (ionInput)="onSearch($event)"
+        showCancelButton="never">
+      </ion-searchbar>
+
+      <ion-list>
+        <ion-item *ngFor="let student of filteredStudents">
+          <ion-label>
+            <h2>{{ student.fullName }}</h2>
+            <p>{{ student.studentId }}</p>
+            <ion-badge [color]="getRoleColor(student.accountRole)">{{ getRoleLabel(student.accountRole) }}</ion-badge>
+          </ion-label>
+          
+          <ion-button slot="end" fill="outline" size="small" *ngIf="student.accountRole === 'none'" (click)="createAccount(student)">
+            Create Account
+          </ion-button>
+
+          <ion-button slot="end" fill="outline" color="warning" size="small" *ngIf="student.accountRole === 'student'" (click)="promoteToHomeroom(student)">
+            Promote
+          </ion-button>
+
+          <ion-button slot="end" fill="outline" color="secondary" size="small" *ngIf="student.accountRole === 'homeroom'" (click)="demoteToStudent(student)">
+            Demote
+          </ion-button>
+
+          <ion-button slot="end" fill="clear" color="danger" *ngIf="student.accountRole !== 'none'" (click)="removeAccount(student)">
+            <ion-icon name="trash-outline"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

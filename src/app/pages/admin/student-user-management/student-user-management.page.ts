@@ -27,7 +27,6 @@ export class StudentUserManagementPage implements OnInit {
     selectedUser: any | null = null;
     isEditing = false;
     isUploading = false;
-    bulkImportMode: 'auth' | 'collection' = 'collection'; // Default to collection mode for students_filtered.csv
 
     constructor(
         private userManagement: UserManagementService,
@@ -91,95 +90,75 @@ export class StudentUserManagementPage implements OnInit {
     }
 
     async addUser() {
-        // If in collection-only mode, do not require email/password
-        if (this.bulkImportMode === 'collection') {
-            if (!this.studentId || !this.society) {
-                this.showToast('Please provide all required fields');
-                return;
-            }
-            // Normalize & validate student ID format (accept MMC2025 and variants)
-            const normalizedId = this.normalizeStudentId(this.studentId);
-            if (!normalizedId) {
-                this.showToast('Invalid student ID format. Supported examples: MMC2021-00653, MMC2024-00531, C12-34');
-                return;
-            }
-            this.studentId = normalizedId;
-            const loader = await this.loadingCtrl.create({ message: 'Creating student...' });
-            await loader.present();
-            try {
-                // Only save to students collection, no Auth
-                await this.userManagement.createBulkStudentsToCollection([
-                    {
-                        email: '',
-                        password: '',
-                        studentId: this.studentId,
-                        society: this.society,
-                        lastName: '',
-                        firstName: '',
-                        middleName: '',
-                        programId: '',
-                        collegeId: '',
-                        yearLevelId: '',
-                        sectionId: ''
-                    }
-                ]);
-                await loader.dismiss();
-                this.showToast('Student created successfully');
-                this.resetForm();
-                this.loadUsers();
-            } catch (error: any) {
-                console.error('Error creating student:', error);
-                await loader.dismiss();
-                await this.showToast('Failed to create student: ' + (error.message || 'Unknown error'));
-            }
-        } else {
-            // Auth mode: require email/password
-            if (!this.email || !this.password || !this.studentId || !this.society) {
-                this.showToast('Please provide all required fields');
-                return;
-            }
-            if (this.password !== this.confirm) {
-                this.showToast('Passwords do not match');
-                return;
-            }
-            // Normalize & validate student ID format (accept MMC2025 and variants)
-            const normalizedAuthId = this.normalizeStudentId(this.studentId);
-            if (!normalizedAuthId) {
-                this.showToast('Invalid student ID format. Supported examples: MMC2021-00653, MMC2024-00531, C12-34');
-                return;
-            }
-            this.studentId = normalizedAuthId;
-            const loader = await this.loadingCtrl.create({ message: 'Creating student...' });
-            await loader.present();
-            try {
-                await this.userManagement.createStudentUser(this.email, this.password, this.studentId, this.society);
-                await loader.dismiss();
-                this.showToast('Student created successfully');
-                this.resetForm();
-                this.loadUsers();
-            } catch (error: any) {
-                console.error('Error creating student:', error);
-                await loader.dismiss();
-                await this.showToast('Failed to create student: ' + (error.message || 'Unknown error'));
-            }
+        if (!this.studentId || !this.society) {
+            this.showToast('Please provide all required fields');
+            return;
+        }
+        // Normalize & validate student ID format (accept MMC2025 and variants)
+        const normalizedId = this.normalizeStudentId(this.studentId);
+        if (!normalizedId) {
+            this.showToast('Invalid student ID format. Supported examples: MMC2021-00653, MMC2024-00531, C12-34');
+            return;
+        }
+        this.studentId = normalizedId;
+        const loader = await this.loadingCtrl.create({ message: 'Creating student...' });
+        await loader.present();
+        try {
+            // Only save to students collection, no Auth
+            await this.userManagement.createBulkStudentsToCollection([
+                {
+                    email: '',
+                    password: '',
+                    studentId: this.studentId,
+                    society: this.society,
+                    lastName: this.lastName,
+                    firstName: this.firstName,
+                    middleName: this.middleName,
+                    programId: this.programId,
+                    collegeId: this.collegeId,
+                    yearLevelId: '',
+                    sectionId: ''
+                }
+            ]);
+            await loader.dismiss();
+            this.showToast('Student created successfully');
+            this.resetForm();
+            this.loadUsers();
+        } catch (error: any) {
+            console.error('Error creating student:', error);
+            await loader.dismiss();
+            await this.showToast('Failed to create student: ' + (error.message || 'Unknown error'));
         }
     }
 
-    async editUser(user: User) {
+    async editUser(user: any) {
         this.selectedUser = user;
-        this.email = user.email;
+        this.studentId = user.studentId;
+        this.firstName = user.firstName;
+        this.lastName = user.lastName;
+        this.middleName = user.middleName;
+        this.society = user.society;
+        this.programId = user.programId;
+        this.collegeId = user.collegeId;
         this.isEditing = true;
     }
 
     async updateUser() {
-        if (!this.selectedUser || !this.email) {
+        if (!this.selectedUser) {
             this.showToast('Invalid user data');
             return;
         }
         const loader = await this.loadingCtrl.create({ message: 'Updating student...' });
         await loader.present();
         try {
-            await this.userManagement.updateStudentUser(this.selectedUser.uid, { email: this.email });
+            await this.userManagement.updateStudentInCollection(this.selectedUser.studentId, {
+                firstName: this.firstName,
+                lastName: this.lastName,
+                middleName: this.middleName,
+                society: this.society,
+                programId: this.programId,
+                collegeId: this.collegeId
+            });
             await loader.dismiss();
             this.showToast('Student updated successfully');
             this.resetForm();
@@ -191,9 +170,9 @@ export class StudentUserManagementPage implements OnInit {
         }
     }
 
-    async confirmDelete(user: User) {
+    async confirmDelete(user: any) {
         const toast = await this.toastCtrl.create({
-            message: `Are you sure you want to delete ${user.email}?`,
+            message: `Are you sure you want to delete ${user.fullName || user.studentId}?`,
             position: 'bottom',
             duration: 5000,
             buttons: [
@@ -206,11 +185,11 @@ export class StudentUserManagementPage implements OnInit {
         await toast.present();
     }
 
-    async deleteUser(user: User) {
+    async deleteUser(user: any) {
         const loader = await this.loadingCtrl.create({ message: 'Deleting student...' });
         await loader.present();
         try {
-            await this.userManagement.deleteStudentUser(user.uid);
+            await this.userManagement.deleteStudentFromCollection(user.studentId);
             await loader.dismiss();
             this.showToast('Student deleted successfully');
             this.loadUsers();
@@ -222,9 +201,13 @@ export class StudentUserManagementPage implements OnInit {
     }
 
     resetForm() {
-        this.email = '';
-        this.password = '';
-        this.confirm = '';
+        this.studentId = '';
+        this.firstName = '';
+        this.lastName = '';
+        this.middleName = '';
+        this.society = '';
+        this.programId = '';
+        this.collegeId = '';
         this.selectedUser = null;
         this.isEditing = false;
     }
@@ -322,10 +305,8 @@ export class StudentUserManagementPage implements OnInit {
         try {
             const students = await this.detectAndParseCSV(file);
             
-            // Use collection mode or auth mode based on toggle
-            const results = this.bulkImportMode === 'collection'
-                ? await this.userManagement.createBulkStudentsToCollection(students)
-                : await this.userManagement.createBulkStudents(students);
+            // Always use collection mode
+            const results = await this.userManagement.createBulkStudentsToCollection(students);
             
             await loader.dismiss();
             this.isUploading = false;
