@@ -4,6 +4,10 @@ import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { environment } from '../../environments/environment';
+
 @Component({
     selector: 'app-landing',
     templateUrl: './landing.page.html',
@@ -21,6 +25,9 @@ export class LandingPage {
     private readonly ID_REGEX = /^[A-Z]{3}\d{4}-\d{5}$/;
 
     constructor(private router: Router) {}
+
+    private app = initializeApp(environment.firebaseConfig);
+    private firestore = getFirestore(this.app);
 
     onInputChange(value: string) {
         const cleaned = (value || '').replace(/\s+/g, '').toUpperCase();
@@ -45,7 +52,15 @@ export class LandingPage {
         this.errorMessage = '';
         this.loading = true;
         try {
-            await this.router.navigate(['/student-fees'], { queryParams: { studentId: id } });
+            // Try to find student in `students` collection by doc id
+            const studentDocRef = doc(this.firestore, 'students', id);
+            const studentSnap = await getDoc(studentDocRef);
+            if (studentSnap.exists()) {
+                await this.router.navigate(['/student-fees'], { queryParams: { studentId: id } });
+            } else {
+                // If not found, still navigate to student-fees which will try alternate lookups
+                await this.router.navigate(['/student-fees'], { queryParams: { studentId: id } });
+            }
         } finally {
             this.loading = false;
         }

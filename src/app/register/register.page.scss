@@ -19,6 +19,13 @@
 /* Password toggle button styling */
 ion-item {
     --inner-padding-end: 0px;
+    margin-bottom: 24px; /* Add margin between form fields */
+    --color: #000000; /* Ensure label color is black via CSS variable */
+}
+
+ion-label {
+    margin-bottom: 8px; /* Add margin between label and input */
+    color: #000000 !important; /* Force black color */
 }
 
 ion-item ion-button[slot="end"] {
@@ -50,30 +57,20 @@ ion-item ion-button[slot="end"] ion-icon {
     justify-content: center;
 }
 
-/* Improved form validation indicators */
-// ion-input.ion-valid {
-//     --background: #f0fdf4;
-//     border: 1px solid #22c55e00;
-// }
-
 ion-input.ion-invalid.ion-touched {
     --background: #fef2f2;
     border: 1px solid #ef4444;
 }
 
 ion-input, ion-textarea {
-    --padding-end: 16px !important;
-    --padding-top: 12px !important;
-    font-size: 1rem !important;
     --placeholder-color: #94a3b8;
     --placeholder-opacity: 1;
     background: white;
+    color: #000000 !important; /* Force black color */
+    --color: #000000;
     border-radius: 8px;
-    // border: 1px solid #e2e8f0;
     margin-top: 4px;
-    color: #1e293b;
 }
-//
 
 .header {
   display: flex;

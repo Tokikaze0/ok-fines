@@ -13,15 +13,24 @@
 @import "@ionic/angular/css/text-alignment.css";
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
-@import "@ionic/angular/css/palettes/dark.system.css";
+/* @import "@ionic/angular/css/palettes/dark.system.css"; REMOVED TO PREVENT WHITE TEXT ON WHITE BACKGROUND */
 
 :root {
-  --ion-color-primary: #6366f1;
-  --ion-color-primary-rgb: 99, 102, 241;
+  /* Force Light Mode Text Colors */
+  --ion-text-color: #000000;
+  --ion-text-color-rgb: 0, 0, 0;
+  --ion-background-color: #ffffff;
+  --ion-background-color-rgb: 255, 255, 255;
+  --ion-item-background: #ffffff;
+  --ion-card-background: #ffffff;
+
+  /* New Primary Blue: rgb(22, 138, 247) */
+  --ion-color-primary: #168af7;
+  --ion-color-primary-rgb: 22, 138, 247;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #575ad4;
-  --ion-color-primary-tint: #7375f2;
+  --ion-color-primary-shade: #1379d9;
+  --ion-color-primary-tint: #2d96f8;
 
   --ion-color-secondary: #10b981;
   --ion-color-secondary-rgb: 16, 185, 129;
@@ -33,45 +42,163 @@
   --ion-color-tertiary: #c02828;
 
   --ion-color-cancel: #757575;
+  
+  /* Global Page Background */
+  --page-background: linear-gradient(135deg, #eeeeee 0%, #b99700 100%);
 }
 
 // Custom styles
 ion-content {
-  --background: #f3f4f6;
+  --background: var(--page-background);
 }
 
+/* Glassmorphism Card - 2025 Style */
 ion-card {
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  background: rgba(255, 255, 255, 0.65); /* More transparent */
+  backdrop-filter: blur(20px); /* Stronger blur */
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.8); /* Frosty border */
+  border-radius: 32px; /* Super rounded */
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.05), /* Soft ambient shadow */
+    0 1px 3px rgba(255, 255, 255, 0.5) inset; /* Inner highlight */
+  margin: 20px;
+  overflow: visible;
+}
+
+ion-card-header {
+  padding: 32px 32px 16px 32px;
+}
+
+ion-card-title {
+  font-size: 26px; /* Larger */
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.03em; /* Tight tracking */
 }
 
 ion-button {
-  --border-radius: 10px;
-  font-weight: 600;
-  text-transform: none;
-  height: 48px;
+  --border-radius: 24px; /* Pill shape */
+  font-weight: 700;
+  text-transform: none; /* No uppercase */
+  letter-spacing: 0;
+  height: 56px;
+  font-size: 16px;
+  --box-shadow: 0 10px 20px -5px rgba(22, 138, 247, 0.3);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy transition */
 }
 
-ion-input {
-  --padding-start: 16px;
-  --padding-end: 16px;
-  --border-radius: 10px;
-  --background: #f9fafb;
-  margin: 8px 0;
+ion-button:active {
+  transform: scale(0.95);
+}
+
+/* Primary buttons should have black text as requested */
+ion-button[color="primary"], ion-button:not([color]) {
+  --color: #000000;
+}
+
+ion-item {
+  --background: transparent;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+/* Modern Input Fields */
+ion-input, ion-select, ion-textarea {
+  --background: rgba(255, 255, 255, 0.8);
+  --padding-start: 24px;
+  --padding-end: 24px;
+  --padding-top: 20px;
+  --padding-bottom: 20px;
+  --border-radius: 20px;
+  border: 1px solid transparent;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  margin-bottom: 24px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000;
+  --color: #000000;
+  transition: all 0.2s ease;
+}
+
+ion-input.ion-focused, ion-select.ion-focused, ion-textarea.ion-focused {
+  background: #ffffff;
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 8px 24px rgba(22, 138, 247, 0.15);
+  transform: translateY(-2px);
+}
+
+ion-searchbar {
+  --background: #ffffff;
+  --border-radius: 16px;
+  --box-shadow: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+ion-searchbar.ion-focused {
+  border-color: var(--ion-color-primary);
+}
+
+/* Remove default underline from items wrapping inputs */
+ion-item {
+  --border-width: 0;
+  --highlight-height: 0;
 }
 
 .auth-container {
-  height: 100%;
+  min-height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  // background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
-  background-color: white;
+  background: linear-gradient(135deg, #eeeeee 0%, #b99700 100%);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0;
+}
+
+/* Mobile Responsiveness Adjustments */
+@media (max-width: 576px) {
+  .auth-container {
+    padding: 12px;
+    justify-content: center; /* Keep centered, but allow scroll if needed via min-height */
+  }
+
+  .auth-card {
+    max-width: 100%;
+    border-radius: 24px; /* Slightly less rounded on mobile */
+  }
+
+  ion-card-header {
+    padding: 24px 20px 10px 20px;
+  }
+
+  ion-card-content {
+    padding-inline-start: 20px;
+    padding-inline-end: 20px;
+  }
+
+  ion-input, ion-select, ion-textarea {
+    --padding-start: 16px;
+    --padding-end: 16px;
+    --padding-top: 16px;
+    --padding-bottom: 16px;
+    font-size: 14px;
+  }
+  
+  h1 {
+    font-size: 24px;
+  }
 }
 
 .gradient-button {
-  // --background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
   --background: linear-gradient(135deg, orange 0%, rgb(255, 174, 0) 55%, yellow 100%);
   margin-bottom: 18px;
 }
@@ -102,41 +229,33 @@ ion-input {
   }
 }
 
-.auth-container {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: linear-gradient(135deg, #eeeeee 0%, #b99700 100%);
+/* FORCE BLACK TEXT GLOBALLY TO FIX WHITE-ON-WHITE ISSUES */
+body {
+  color: #000000;
+  --ion-text-color: #000000;
 }
 
-.gradient-button {
-  --background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
+ion-content {
+  --color: #000000;
 }
 
-.delete-toast {
-  --background: #fef2f2;
-  --color: #991b1b;
-  --border-radius: 12px;
-  --button-color: #991b1b;
-  --min-height: 64px;
-  
-  .toast-message {
-    font-weight: 500;
-  }
+ion-item {
+  --color: #000000;
+  color: #000000;
+}
 
-  ion-icon {
-    color: #991b1b;
-  }
+ion-label {
+  color: #000000 !important;
+  --color: #000000 !important;
+}
 
-  ion-button {
-    --color: #991b1b;
-    font-weight: 500;
-    
-    &[role="destructive"] {
-      --background: #991b1b;
-      --color: #ffffff;
-    }
-  }
+ion-input, ion-textarea, ion-select {
+  color: #000000 !important;
+  --color: #000000 !important;
+  --placeholder-color: #6b7280;
+  --placeholder-opacity: 1;
+}
+
+h1, h2, h3, h4, h5, h6, p, span {
+  color: #000000;
 }

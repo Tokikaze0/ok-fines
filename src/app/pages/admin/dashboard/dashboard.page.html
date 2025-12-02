@@ -4,6 +4,10 @@
       <span class="dashboard-title">Society Treasurer</span>
     </ion-title>
     <ion-buttons slot="end">
+      <ion-button fill="none" routerLink="/profile">
+        <ion-icon name="person-circle-outline" slot="start"></ion-icon>
+        Profile
+      </ion-button>
       <ion-button fill="none" (click)="logout()" class="logout-btn">
         Sign Out
       </ion-button>
@@ -76,6 +80,22 @@
 
               <h2>Outstanding Report</h2>
               <p>View students with outstanding balances</p>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+
+      <!-- Homeroom Management -->
+      <ion-col size="12" size-md="6">
+        <ion-card class="stats-card clickable" routerLink="/homeroom-management">
+          <ion-card-content>
+            <div class="card-content-wrapper">
+              <div class="card-icon primary-bg">
+                <ion-icon name="people"></ion-icon>
+              </div>
+
+              <h2>Homeroom Management</h2>
+              <p>Manage homeroom accounts</p>
             </div>
           </ion-card-content>
         </ion-card>

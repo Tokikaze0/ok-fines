@@ -1,29 +1,17 @@
-#container {
-  text-align: center;
-
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+/* Toolbar inside the card */
+ion-toolbar {
+  --background: transparent;
+  --color: #000000;
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
+ion-back-button {
+  --color: #000000;
 }
 
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-
-  color: #8c8c8c;
-
-  margin: 0;
-}
-
-#container a {
-  text-decoration: none;
+/* Input text color and internal spacing */
+ion-input {
+  color: #000000;
+  --color: #000000;
 }
 
 .register-link-container {
@@ -34,27 +22,26 @@
 .register-pill {
   display: inline-flex;
   align-items: center;
-  // gap: 8px;
-  // margin-right: 8px;
-  // padding: 8px 14px;
-  // border-radius: 24px;
-  // background: linear-gradient(90deg, var(--ion-color-primary), var(--ion-color-secondary, #10c0d8));
   position: relative;
   margin: 6px 0 0 2px;
   color: rgb(22, 138, 247);
   text-decoration: underline;
-  // box-shadow: 0 4px 10px rgba(16, 176, 255, 0.12);
 }
 
 .register-pill ion-icon {
   font-size: 18px;
 }
 
-/* removed in-card back button; header back button now used */
-
 /* Ensure the password toggle button vertically centers next to the input */
 ion-item {
   --inner-padding-end: 0px; /* avoid extra right padding interfering */
+  margin-bottom: 24px; /* Add margin between form fields */
+  --color: #000000; /* Ensure label color is black via CSS variable */
+}
+
+ion-label {
+  margin-bottom: 8px; /* Add margin between label and input */
+  color: #000000 !important; /* Force black color */
 }
 
 ion-item ion-button[slot="end"] {
@@ -73,18 +60,6 @@ ion-item ion-button[slot="end"] ion-icon {
   align-items: center; /* vertically center label/input/button */
 }
 
-.password-item ion-input {
-  padding-right: 0; /* avoid extra right padding so button sits flush */
-  // border: 1px solid gray;
-  // border-radius: 12px;
-}
-
-.email-address ion-input {
-  padding-right: 0; /* avoid extra right padding so button sits flush */
-  // border: 1px solid gray;
-  // border-radius: 12px;
-}
-
 .password-item ion-button[slot="end"] {
   height: 36px;
   width: 36px;
@@ -94,23 +69,13 @@ ion-item ion-button[slot="end"] ion-icon {
   justify-content: center;
 }
 
-// /
 .header {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
 }
-.ion-padding {
-  // box-shadow: none;
-  // padding: 4rem 4rem 4rem 4rem;
-  border: 1px solid #ccc;
-}
+
 .login-btn {
   margin-top: 2rem;
 }
-// .eye {
-//   font-size: 24px;
-//   width: 24px;
-//   height: 24px;
-// }

@@ -22,6 +22,34 @@
         <ion-label position="floating">Amount (₱)</ion-label>
         <ion-input type="number" [(ngModel)]="newFeeAmount" placeholder="0.00"></ion-input>
       </ion-item>
+      <!-- Student selection -->
+      <ion-item lines="none">
+        <ion-label>Select students to assign this fee (optional)</ion-label>
+      </ion-item>
+      <!-- Group filters -->
+      <ion-item lines="none">
+        <ion-label>Filter by Year</ion-label>
+        <ion-select [(ngModel)]="filterYear" (ionChange)="selectedStudentIds = []">
+          <ion-select-option [value]="null">All</ion-select-option>
+          <ion-select-option *ngFor="let y of yearLevels" [value]="y">{{ y }}</ion-select-option>
+        </ion-select>
+      </ion-item>
+      <ion-item lines="none">
+        <ion-label>Filter by Section</ion-label>
+        <ion-select [(ngModel)]="filterSection" (ionChange)="selectedStudentIds = []">
+          <ion-select-option [value]="null">All</ion-select-option>
+          <ion-select-option *ngFor="let s of sections" [value]="s">{{ s }}</ion-select-option>
+        </ion-select>
+      </ion-item>
+      <ion-list *ngIf="students.length > 0" class="student-selection-list">
+        <ion-item *ngFor="let s of getDisplayedStudents()">
+          <ion-checkbox slot="start" [checked]="selectedStudentIds.indexOf(s.id) !== -1" (ionChange)="toggleStudentSelection(s.id)"></ion-checkbox>
+          <ion-label>
+            <h3>{{ s.fullName }}</h3>
+            <p>{{ s.studentId || s.id }}</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
       <ion-button expand="block" (click)="addFee()" class="ion-margin-top">
         <ion-icon name="add-circle" slot="start"></ion-icon>
         Add Fee

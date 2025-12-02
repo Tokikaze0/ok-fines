@@ -13,6 +13,10 @@ export class UserManagementService {
   private firestore = getFirestore(this.app);
   private auth = getAuth(this.app);
 
+  // Secondary app for creating users without logging out the admin
+  private secondaryApp = initializeApp(environment.firebaseConfig, 'SecondaryApp');
+  private secondaryAuth = getAuth(this.secondaryApp);
+
   // Normalize student ID formats and pad numeric part to 5 digits when appropriate.
   // Examples:
   //  - "MMC2025 - 00101" -> "MMC2025-00101"
@@ -73,8 +77,12 @@ export class UserManagementService {
     }
     studentId = normalized;
 
-    const cred = await createUserWithEmailAndPassword(this.auth, email, password);
+    // Use secondaryAuth to create user so the admin stays logged in
+    const cred = await createUserWithEmailAndPassword(this.secondaryAuth, email, password);
     const user = cred.user;
+
+    // Sign out the secondary user immediately to clean up
+    await this.secondaryAuth.signOut();
 
     const societyId = adminData['societyId'] || currentUser.uid;
     const userData: User = {
@@ -185,14 +193,11 @@ export class UserManagementService {
     const userDocRef = doc(this.firestore, 'users', uid);
     await deleteDoc(userDocRef);
 
-    try {
-      const user = this.auth.currentUser;
-      if (user && user.uid === uid) {
-        await deleteUser(user);
-      }
-    } catch (error) {
-      console.error('Error deleting user from Authentication:', error);
-    }
+    // Note: We cannot delete the user from Authentication here because we are on the free plan
+    // and cannot use Cloud Functions. The user is effectively deleted because their
+    // Firestore profile is gone, preventing login.
+    // To fully remove from Auth, use the 'scripts/delete-auth-user.js' script.
+    console.log('User profile deleted. Run admin script to remove from Auth.');
   }
 
   /**
@@ -274,7 +279,7 @@ export class UserManagementService {
           collegeId: student.collegeId || '',
           yearLevelId: student.yearLevelId || '',
           sectionId: student.sectionId || '',
-          societyId
+          societyId: student.societyId || societyId
         };
 
         const studentDocRef = doc(this.firestore, 'students', student.studentId);
@@ -292,6 +297,28 @@ export class UserManagementService {
   }
 
   /**
+   * Update a student in the collection
+   */
+  async updateStudentInCollection(studentId: string, data: any): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const studentDocRef = doc(this.firestore, 'students', studentId);
+    await updateDoc(studentDocRef, data);
+  }
+
+  /**
+   * Delete a student from the collection
+   */
+  async deleteStudentFromCollection(studentId: string): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const studentDocRef = doc(this.firestore, 'students', studentId);
+    await deleteDoc(studentDocRef);
+  }
+
+  /**
    * Get a single student user by ID
    */
   async getStudentUser(uid: string): Promise<User | null> {
@@ -302,6 +329,91 @@ export class UserManagementService {
       return docSnap.data() as User;
     }
     return null;
+  }
+
+  /**
+   * Create a new homeroom user
+   */
+  async createHomeroomUser(email: string, password: string, studentId: string, society: any): Promise<User> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    if (!currentUserDoc.exists() || currentUserDoc.data()['role'] !== 'admin') {
+      throw new Error('Only admin users can create homeroom users');
+    }
+
+    let extraFields: any = {};
+    if (typeof society === 'object' && society !== null) {
+      extraFields = society;
+      society = extraFields.society || '';
+    }
+
+    const normalized = this.normalizeStudentId(studentId);
+    if (!normalized) throw new Error('Invalid student ID format');
+    studentId = normalized;
+
+    // Use secondaryAuth to create user so the admin stays logged in
+    const cred = await createUserWithEmailAndPassword(this.secondaryAuth, email, password);
+    const user = cred.user;
+
+    // Sign out the secondary user immediately to clean up
+    await this.secondaryAuth.signOut();
+
+    const societyId = currentUserDoc.data()['societyId'] || currentUser.uid;
+    const userData: User = {
+      uid: user.uid,
+      email: email,
+      role: 'homeroom',
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser.uid,
+      studentId: studentId,
+      society: society,
+      societyId,
+      ...extraFields
+    };
+
+    const userDocRef = doc(this.firestore, 'users', user.uid);
+    await setDoc(userDocRef, userData);
+
+    return userData;
+  }
+
+  /**
+   * Update user role
+   */
+  async updateUserRole(uid: string, newRole: 'student' | 'homeroom'): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    if (!currentUserDoc.exists() || currentUserDoc.data()['role'] !== 'admin') {
+      throw new Error('Only admin users can update roles');
+    }
+
+    const userDocRef = doc(this.firestore, 'users', uid);
+    await updateDoc(userDocRef, { role: newRole });
+  }
+
+  /**
+   * Get all users in society (students and homeroom)
+   */
+  async getAllUsersInSociety(): Promise<User[]> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    if (!currentUserDoc.exists()) throw new Error('User document not found');
+
+    const societyId = currentUserDoc.data()['societyId'] || currentUser.uid;
+    const usersRef = collection(this.firestore, 'users');
+    const q = query(usersRef, where('societyId', '==', societyId));
+    const querySnapshot = await getDocs(q);
+    
+    // Filter out the admin themselves if needed, or just return all
+    return querySnapshot.docs
+      .map(doc => ({ ...doc.data(), uid: doc.id } as User))
+      .filter(u => u.role !== 'admin');
   }
 
   /**
@@ -350,6 +462,71 @@ export class UserManagementService {
       const fb = ((b.firstName || '') as string).toString().toLowerCase();
       if (fa < fb) return -1;
       if (fa > fb) return 1;
+      return 0;
+    });
+
+    return students;
+  }
+
+  /**
+   * Get students filtered by Year Level and Section (for Homeroom)
+   */
+  async getStudentsBySection(yearLevelId: string | number, sectionId: string | number): Promise<any[]> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) throw new Error('No authenticated user found');
+
+    const currentUserDoc = await getDoc(doc(this.firestore, 'users', currentUser.uid));
+    const societyId = currentUserDoc.data()?.['societyId'];
+
+    if (!societyId) {
+        console.warn('getStudentsBySection: No societyId found for current user');
+        return [];
+    }
+
+    const studentsRef = collection(this.firestore, 'students');
+    
+    // Helper to execute query
+    const executeQuery = async (y: any, s: any) => {
+        const q = query(
+            studentsRef, 
+            where('societyId', '==', societyId),
+            where('yearLevelId', '==', y),
+            where('sectionId', '==', s)
+        );
+        return await getDocs(q);
+    }
+
+    // 1. Try exact match
+    let querySnapshot = await executeQuery(yearLevelId, sectionId);
+
+    // 2. If empty, try string conversion
+    if (querySnapshot.empty) {
+        querySnapshot = await executeQuery(String(yearLevelId), String(sectionId));
+    }
+
+    // 3. If empty and year is number-like, try number conversion
+    if (querySnapshot.empty && !isNaN(Number(yearLevelId))) {
+         querySnapshot = await executeQuery(Number(yearLevelId), String(sectionId));
+    }
+    
+    const students: any[] = querySnapshot.docs.map(d => {
+      const data = d.data();
+      const lastName = data['lastName'] || '';
+      const firstName = data['firstName'] || '';
+      const middleName = data['middleName'] || '';
+      return {
+        id: d.id,
+        ...data,
+        fullName: `${lastName}${lastName ? ', ' : ''}${firstName}${middleName ? ' ' + middleName : ''}`.trim()
+      } as any;
+    });
+
+    // sort by lastName then firstName
+    students.sort((a: any, b: any) => {
+      const la = ((a.lastName || '') as string).toString().toLowerCase();
+      const lb = ((b.lastName || '') as string).toString().toLowerCase();
+      if (la < lb) return -1;
+      if (la > lb) return 1;
       return 0;
     });
 

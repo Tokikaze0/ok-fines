@@ -70,8 +70,9 @@
       <ion-list *ngIf="filteredData.length > 0">
         <ion-item *ngFor="let student of filteredData" lines="full">
           <ion-label>
-            <h2>{{ student.studentId }}</h2>
-            <p>{{ student.email }}</p>
+            <h2>{{ student.fullName || student.studentId }}</h2>
+            <p *ngIf="student.fullName">{{ student.studentId }}</p>
+            <p *ngIf="student.email">{{ student.email }}</p>
             <p *ngIf="student.society"><strong>Society:</strong> {{ student.society }}</p>
           </ion-label>
 

@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FeeService } from '@core/services/fee.service';
+import { UserManagementService } from '@core/services/user-management.service';
 import { Fee } from '@core/models/fee.model';
 import { AlertController, LoadingController, ToastController, ModalController } from '@ionic/angular';
 
@@ -13,6 +14,12 @@ export class ManageFeesPage implements OnInit, OnDestroy {
   fees: Fee[] = [];
   isLoading = false;
   unsubscribe?: () => void;
+  students: any[] = [];
+  selectedStudentIds: string[] = [];
+  yearLevels: string[] = [];
+  sections: string[] = [];
+  filterYear: string | null = null;
+  filterSection: string | null = null;
   
   newFeeDescription = '';
   newFeeAmount: number | null = null;
@@ -22,6 +29,7 @@ export class ManageFeesPage implements OnInit, OnDestroy {
 
   constructor(
     private feeService: FeeService,
+    private userMgmt: UserManagementService,
     private alertCtrl: AlertController,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController
@@ -29,6 +37,7 @@ export class ManageFeesPage implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadFees();
+    this.loadStudents();
   }
 
   ngOnDestroy() {
@@ -55,16 +64,112 @@ export class ManageFeesPage implements OnInit, OnDestroy {
     await loader.present();
 
     try {
-      const feeId = await this.feeService.addFee(this.newFeeDescription, this.newFeeAmount);
-      await this.feeService.createPaymentsForFee(feeId);
-      await this.showToast('Fee added successfully');
-      this.newFeeDescription = '';
-      this.newFeeAmount = null;
+      // Case 1: Specific students selected manually
+      if (this.selectedStudentIds.length > 0) {
+          const feeId = await this.feeService.addFee(this.newFeeDescription, this.newFeeAmount!);
+          await this.feeService.createPaymentsForFee(feeId, this.selectedStudentIds);
+          await this.finalizeAddFee();
+          await loader.dismiss();
+          return;
+      }
+
+      // Case 2: No manual selection, but filters are active (Target Audience)
+      if (this.filterYear || this.filterSection) {
+          const confirm = await this.alertCtrl.create({
+              header: 'Confirm Target Audience',
+              message: `Create fee for ${this.filterYear ? 'Year ' + this.filterYear : 'All Years'} ${this.filterSection ? 'Section ' + this.filterSection : ''}?`,
+              buttons: [
+                  { text: 'Cancel', role: 'cancel' },
+                  {
+                      text: 'Create',
+                      handler: async () => {
+                          const feeId = await this.feeService.addFee(
+                              this.newFeeDescription, 
+                              this.newFeeAmount!, 
+                              this.filterYear || undefined, 
+                              this.filterSection || undefined
+                          );
+                          
+                          // Pass fee data directly to avoid race condition
+                          const feeData: any = {
+                              targetYearLevel: this.filterYear || undefined,
+                              targetSection: this.filterSection || undefined
+                          };
+
+                          // Pass undefined for students so it uses the fee targets
+                          await this.feeService.createPaymentsForFee(feeId, undefined, feeData);
+                          await this.finalizeAddFee();
+                      }
+                  }
+              ]
+          });
+          await loader.dismiss();
+          await confirm.present();
+          return;
+      }
+
+      // Case 3: No selection, no filters -> All Students
+      const confirm = await this.alertCtrl.create({
+        header: 'No target selected',
+        message: 'This will create a fee for ALL students. Continue?',
+        buttons: [
+          { text: 'Cancel', role: 'cancel' },
+          {
+            text: 'Create for ALL',
+            handler: async () => {
+              const feeId = await this.feeService.addFee(this.newFeeDescription, this.newFeeAmount!);
+              await this.feeService.createPaymentsForFee(feeId, undefined);
+              await this.finalizeAddFee();
+            }
+          }
+        ]
+      });
       await loader.dismiss();
+      await confirm.present();
+
     } catch (error: any) {
       await loader.dismiss();
       await this.showToast(error.message || 'Error adding fee', 'danger');
     }
+  }
+
+  async finalizeAddFee() {
+      await this.showToast('Fee added successfully');
+      this.newFeeDescription = '';
+      this.newFeeAmount = null;
+      this.selectedStudentIds = [];
+  }
+
+  async loadStudents() {
+    try {
+      this.students = await this.userMgmt.getAllStudentsFromCollection();
+      // build unique lists for filters
+      const years = new Set<string>();
+      const secs = new Set<string>();
+      this.students.forEach(s => {
+        if (s.yearLevelId) years.add(String(s.yearLevelId));
+        if (s.sectionId) secs.add(String(s.sectionId));
+      });
+      this.yearLevels = Array.from(years).sort();
+      this.sections = Array.from(secs).sort();
+    } catch (err) {
+      console.warn('Could not load students for selection:', err);
+      this.students = [];
+    }
+  }
+
+  toggleStudentSelection(studentId: string) {
+    const idx = this.selectedStudentIds.indexOf(studentId);
+    if (idx === -1) this.selectedStudentIds.push(studentId);
+    else this.selectedStudentIds.splice(idx, 1);
+  }
+
+  getDisplayedStudents() {
+    return this.students.filter(s => {
+      if (this.filterYear && String(s.yearLevelId) !== String(this.filterYear)) return false;
+      if (this.filterSection && String(s.sectionId) !== String(this.filterSection)) return false;
+      return true;
+    });
   }
 
   async editFee(fee: Fee) {
@@ -110,7 +215,9 @@ export class ManageFeesPage implements OnInit, OnDestroy {
               const loader = await this.loadingCtrl.create({ message: 'Deleting...' });
               await loader.present();
               try {
-                await this.feeService.deleteFee(fee.id);
+                    // Ensure current user has permission (gives clearer errors)
+                    await this.feeService.ensureCanDeleteFee(fee.id);
+                    await this.feeService.deleteFee(fee.id);
                 await this.showToast('Fee deleted successfully');
                 await loader.dismiss();
               } catch (error: any) {

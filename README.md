@@ -14,14 +14,13 @@ OK-Fines is an integrated platform designed to help organizations track student 
 - 🔐 **User Authentication** - Secure login and registration with Firebase Authentication
 - 👥 **User Management** - Admin-only student user registration and management
 - 📊 **Dashboard** - Role-based dashboards for different user types
-- 📋 **Survey System** - Project contribution surveys
 - 📤 **Bulk User Upload** - CSV-based student registration
 - 🎭 **Society Tracking** - Track students by society affiliation
 - 🆔 **Student ID Management** - Track students with MMC format IDs
 
 ### User Roles
-- **Admin** - Full system access, user management, survey oversight
-- **Student** - Access to surveys, view contributions
+- **Admin** - Full system access, user management
+- **Student** - view contributions
 - **Homeroom** - Manage student records and contributions (legacy)
 
 ## 🚀 Getting Started

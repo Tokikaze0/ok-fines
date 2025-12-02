@@ -1,6 +1,6 @@
 :root {
 	--page-bg: #e6e6e6;
-	/* light gray background like the mock */
+	--primary-blue: rgb(22, 138, 247);
 }
 
 ion-content {
@@ -16,114 +16,149 @@ ion-content {
 	background: linear-gradient(135deg, #eeeeee 0%, #b99700 100%);
 }
 
+/* Mobile Responsiveness */
+@media (max-width: 576px) {
+	.landing-plain {
+		padding: 20px 16px;
+	}
+
+	.landing-card {
+		padding: 32px 24px;
+		border-radius: 20px;
+	}
+
+	.landing-title {
+		font-size: 24px;
+		margin-bottom: 24px;
+	}
+
+	.plain-btn {
+		height: 50px;
+		font-size: 16px;
+	}
+}
+
 .landing-card {
 	width: 100%;
-	max-width: 820px;
+	max-width: 500px;
 	background: #ffffff;
-	/* white card */
-	padding: 40px 48px;
-	border-radius: 16px;
-	box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-	border-radius: 10px;
+	padding: 48px 40px;
+	border-radius: 24px;
+	box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 	display: flex;
 	flex-direction: column;
 	align-items: stretch;
 	position: relative;
-	/* allow z-indexed children */
 }
 
 .landing-title {
-	font-size: 40px;
+	font-size: 32px;
 	font-weight: 800;
-	letter-spacing: 1px;
-	margin: 8px 0 28px 0;
+	letter-spacing: -0.025em;
+	margin: 0 0 40px 0;
 	text-align: center;
-	color: #000000;
+	color: #111827;
+	line-height: 1.2;
 }
 
 .landing-box {
 	width: 100%;
-	max-width: 1200px;
-	background: #dfdfdf;
-	/* white card */
-	border: 1px solid rgba(0, 0, 0, 0.08);
-	border-radius: 8px;
-	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-	padding: 24px 28px;
-	box-sizing: border-box;
+	/* Removed the inner box for a cleaner look */
+	background: transparent;
+	padding: 0;
 }
 
 .plain-label {
 	display: block;
-	font-size: 24px;
-	color: #000000;
-	margin: 6px 0 12px 6px;
+	font-size: 16px;
+	font-weight: 600;
+	color: #374151;
+	margin: 0 0 8px 4px;
 }
 
 .plain-input {
 	width: 100%;
-	height: 72px;
-	border: 2px solid #000000;
-	background: #ffffff;
-	padding: 12px 16px;
-	font-size: 26px;
+	/* Using ion-input CSS variables for better control */
+	--background: #ffffff;
+	--padding-start: 16px;
+	--padding-end: 16px;
+	--padding-top: 16px;
+	--padding-bottom: 16px;
+	--border-radius: 12px;
+	--border-color: #cfcfcf;
+	--border-width: 2px;
+	--border-style: solid;
+	--highlight-color-focused: var(--primary-blue);
+	
+	margin-bottom: 24px;
+	font-size: 18px;
 	color: #000000;
-	box-sizing: border-box;
-	margin-bottom: 28px;
+	
+	/* Fallback/Native styling */
+	border-radius: 12px;
+}
+
+/* Focus state for the input border if using standard input */
+.plain-input.ion-focused {
+	--border-color: var(--primary-blue);
 }
 
 .plain-btn {
 	width: 100%;
-	height: 70px;
-	background: linear-gradient(#eeeeee, #cfcfcf);
-	border: hidden;
+	height: 60px;
+	/* Using the Blue from palette for the primary action */
+	background: var(--primary-blue);
+	border-radius: 12px;
 	color: #000000;
-	font-size: 22px;
+	font-size: 18px;
 	font-weight: 700;
-	letter-spacing: 1px;
-	text-align: center;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	margin-bottom: 18px;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	margin-bottom: 24px;
+	box-shadow: 0 4px 6px -1px rgba(22, 138, 247, 0.3);
+	transition: all 0.2s ease;
+	--background: var(--primary-blue);
+	--background-activated: #1565c0; /* Darker blue for active state */
+	--border-radius: 12px;
+	--box-shadow: 0 4px 6px -1px rgba(22, 138, 247, 0.3);
+}
+
+.plain-btn:active {
+	transform: scale(0.98);
 }
 
 .admin-row {
 	width: 100%;
 	text-align: center;
-	margin-top: 10px;
+	margin-top: 8px;
 }
 
 .admin-link {
-	color: #000;
-	text-decoration: underline;
-	font-size: 18px;
-	position: relative;
-	z-index: 20;
-	/* ensure it's above other elements */
-	pointer-events: auto;
+	color: #6b7280;
+	text-decoration: none;
+	font-size: 16px;
+	font-weight: 500;
 	cursor: pointer;
-	display: inline-block;
-	font: bold 18px Arial, sans-serif;
+	transition: color 0.2s;
+}
+
+.admin-link:hover {
+	color: #000000;
+	text-decoration: underline;
 }
 
 /* small responsive tweaks */
 @media (max-width: 600px) {
+	.landing-card {
+		padding: 32px 24px;
+	}
+	
 	.landing-title {
-		font-size: 28px;
-	}
-
-	.plain-label {
-		font-size: 18px;
-	}
-
-	.plain-input {
-		height: 58px;
-		font-size: 18px;
+		font-size: 26px;
 	}
 
 	.plain-btn {
 		height: 56px;
-		font-size: 18px;
+		font-size: 16px;
 	}
 }

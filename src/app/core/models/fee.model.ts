@@ -8,6 +8,8 @@ export interface Fee {
   createdAt: string;
   createdBy: string; // admin UID
   societyId?: string;
+  targetYearLevel?: string;
+  targetSection?: string;
 }
 
 /**
@@ -17,9 +19,9 @@ export interface Payment {
   id?: string;
   studentId: string;
   feeId: string;
-  status: 'paid' | 'unpaid'; // Changed from enum to union type for simplicity
+  status: 'paid' | 'unpaid' | 'pending'; // 'pending' = collected by homeroom, waiting for admin
   paidAt?: string;
-  paidBy?: string; // admin UID who marked as paid
+  paidBy?: string; // admin/homeroom UID who marked as paid/pending
   notes?: string;
   createdAt: string;
   societyId?: string;
@@ -30,6 +32,7 @@ export interface Payment {
  */
 export interface StudentPaymentSummary {
   studentId: string;
+  fullName?: string;
   email: string;
   society?: string;
   totalUnpaid: number;

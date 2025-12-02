@@ -8,60 +8,101 @@
 </ion-header>
 
 <ion-content class="ion-padding">
-  <ion-card>
+  
+  <!-- 1. Select Fee -->
+  <ion-card class="glass-card">
     <ion-card-header>
-      <ion-card-title>All Student Payments</ion-card-title>
+      <ion-card-title>Select Fee to Track</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <ion-list *ngIf="payments.length > 0">
-        <ng-container *ngFor="let payment of payments">
-          <!-- Display Mode -->
-          <ion-item *ngIf="selectedPaymentId !== payment.id" lines="full" (click)="selectPayment(payment)">
-            <ion-label>
-              <h2>{{ payment.studentId }}</h2>
-              <p>{{ getFeeName(payment.feeId) }} - ₱{{ getFeeAmount(payment.feeId).toFixed(2) }}</p>
-            </ion-label>
-            <ion-badge [color]="getStatusBadgeColor(payment.status)" slot="end">
-              {{ payment.status === 'paid' ? 'PAID' : 'UNPAID' }}
-            </ion-badge>
-          </ion-item>
-
-          <!-- Edit Mode -->
-          <ion-card *ngIf="selectedPaymentId === payment.id" color="light">
-            <ion-card-content>
-              <ion-text>
-                <h2>{{ payment.studentId }}</h2>
-                <p>{{ getFeeName(payment.feeId) }} - ₱{{ getFeeAmount(payment.feeId).toFixed(2) }}</p>
-              </ion-text>
-
-              <ion-item>
-                <ion-label>Status</ion-label>
-                <ion-select [(ngModel)]="selectedStatus">
-                  <ion-select-option value="paid">Paid</ion-select-option>
-                  <ion-select-option value="unpaid">Unpaid</ion-select-option>
-                </ion-select>
-              </ion-item>
-
-              <ion-item>
-                <ion-label position="floating">Notes (Optional)</ion-label>
-                <ion-textarea [(ngModel)]="notes"></ion-textarea>
-              </ion-item>
-
-              <ion-button expand="block" color="success" (click)="updatePaymentStatus()" class="ion-margin-top">
-                <ion-icon name="checkmark-circle" slot="start"></ion-icon>
-                Save
-              </ion-button>
-              <ion-button expand="block" fill="outline" color="medium" class="btn" (click)="cancelSelect()">
-                Cancel
-              </ion-button>
-            </ion-card-content>
-          </ion-card>
-        </ng-container>
-      </ion-list>
-
-      <ion-text *ngIf="payments.length === 0" color="medium">
-        <p>No payments yet.</p>
-      </ion-text>
+      <ion-item lines="none" class="glass-item">
+        <ion-label position="stacked">Fee Description</ion-label>
+        <ion-select [(ngModel)]="selectedFeeId" (ionChange)="onFeeChange()" placeholder="Choose a fee...">
+          <ion-select-option *ngFor="let fee of fees" [value]="fee.id">
+            {{ fee.description }} (₱{{ fee.amount }})
+          </ion-select-option>
+        </ion-select>
+      </ion-item>
     </ion-card-content>
   </ion-card>
+
+  <!-- 2. Student List -->
+  <div *ngIf="selectedFeeId">
+    
+    <!-- Filter Radio Buttons -->
+    <ion-card class="glass-card ion-margin-bottom">
+      <ion-card-content>
+        <!-- Section Filter -->
+        <ion-item lines="none" class="glass-item ion-margin-bottom">
+          <ion-label>Filter by Section</ion-label>
+          <ion-select [(ngModel)]="filterSection" (ionChange)="onFilterChange()" interface="popover">
+            <ion-select-option value="all">All Sections</ion-select-option>
+            <ion-select-option *ngFor="let section of availableSections" [value]="section">
+              {{ section }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-radio-group [(ngModel)]="filterStatus" (ionChange)="onFilterChange()" style="display: flex; flex-direction: row;">
+          <ion-item lines="none" class="glass-item" style="flex: 1">
+            <ion-label>All</ion-label>
+            <ion-radio slot="start" value="all"></ion-radio>
+          </ion-item>
+          <ion-item lines="none" class="glass-item" style="flex: 1">
+            <ion-label>Paid</ion-label>
+            <ion-radio slot="start" value="paid"></ion-radio>
+          </ion-item>
+          <ion-item lines="none" class="glass-item" style="flex: 1">
+            <ion-label>Unpaid</ion-label>
+            <ion-radio slot="start" value="unpaid"></ion-radio>
+          </ion-item>
+        </ion-radio-group>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-list *ngIf="!isLoading && groupedStudents.length > 0">
+      <ion-item-group *ngFor="let group of groupedStudents">
+        <ion-item-divider sticky>
+          <ion-label><strong>{{ group.groupName }}</strong></ion-label>
+        </ion-item-divider>
+
+        <ion-item *ngFor="let student of group.students" lines="full" class="glass-item">
+          <ion-label>
+            <h2>{{ student.fullName }}</h2>
+            <p>{{ student.studentId }}</p>
+          </ion-label>
+
+          <!-- Status Badge -->
+          <ion-badge [color]="getStatusColor(student.paymentStatus)" slot="end" class="ion-margin-end">
+            {{ student.paymentStatus | uppercase }}
+          </ion-badge>
+
+          <!-- Checkbox Action -->
+          <ion-checkbox 
+            slot="end"
+            [checked]="isCheckboxChecked(student.paymentStatus)"
+            [disabled]="isCheckboxDisabled(student.paymentStatus)"
+            (click)="toggleStatus(student)">
+          </ion-checkbox>
+        </ion-item>
+      </ion-item-group>
+    </ion-list>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="ion-text-center ion-padding">
+      <ion-spinner></ion-spinner>
+      <p>Loading students...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && students.length === 0" class="ion-text-center ion-padding">
+      <p>No students found for your section/year level.</p>
+    </div>
+  </div>
+
+  <div *ngIf="!selectedFeeId" class="ion-text-center ion-padding">
+    <ion-icon name="arrow-up" size="large"></ion-icon>
+    <p>Please select a fee above to start tracking.</p>
+  </div>
+
 </ion-content>
