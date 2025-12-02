@@ -279,7 +279,7 @@ export class UserManagementService {
           collegeId: student.collegeId || '',
           yearLevelId: student.yearLevelId || '',
           sectionId: student.sectionId || '',
-          societyId
+          societyId: student.societyId || societyId
         };
 
         const studentDocRef = doc(this.firestore, 'students', student.studentId);

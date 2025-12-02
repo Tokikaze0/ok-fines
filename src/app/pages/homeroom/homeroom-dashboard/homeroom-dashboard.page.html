@@ -1,9 +1,19 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
-    <ion-title>Homeroom</ion-title>
-    <ion-buttons slot="end">
-      <ion-button (click)="logout()">
-        <ion-icon name="log-out-outline" slot="icon-only"></ion-icon>
+    <ion-title>
+      <div class="header-logo">
+        <ion-icon name="grid" color="primary"></ion-icon>
+        <span>Homeroom</span>
+      </div>
+    </ion-title>
+    <ion-buttons slot="end" class="ion-margin-end">
+      <ion-button routerLink="/profile" class="nav-btn">
+        <ion-icon name="person-circle-outline" slot="start"></ion-icon>
+        <span class="btn-text">Profile</span>
+      </ion-button>
+      <ion-button (click)="logout()" class="nav-btn logout">
+        <ion-icon name="log-out-outline" slot="start"></ion-icon>
+        <span class="btn-text">Logout</span>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>

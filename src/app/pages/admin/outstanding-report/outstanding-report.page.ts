@@ -45,17 +45,22 @@ export class OutstandingReportPage implements OnInit {
   }
 
   filterData() {
-    if (!this.searchTerm.trim()) {
-      this.filteredData = this.outstandingData;
-    } else {
+    let data = this.outstandingData;
+
+    if (this.searchTerm.trim()) {
       const term = this.searchTerm.toLowerCase();
-      this.filteredData = this.outstandingData.filter(
+      data = data.filter(
         item =>
           item.studentId.toLowerCase().includes(term) ||
           item.email.toLowerCase().includes(term) ||
+          (item.fullName && item.fullName.toLowerCase().includes(term)) ||
           (item.society && item.society.toLowerCase().includes(term))
       );
     }
+
+    // Only show students with outstanding balance in the UI
+    this.filteredData = data.filter(item => item.totalUnpaid > 0);
+    
     this.calculateTotal();
   }
 
@@ -69,13 +74,46 @@ export class OutstandingReportPage implements OnInit {
 
   async exportCSV() {
     try {
-      const header = ['Student ID', 'Email', 'Society', 'Total Unpaid'];
-      const rows = this.filteredData.map(item => [
-        item.studentId,
-        item.email,
-        item.society || '',
-        item.totalUnpaid.toFixed(2)
-      ]);
+      if (this.outstandingData.length === 0) {
+        await this.showToast('No data to export', 'warning');
+        return;
+      }
+
+      // 1. Get all unique fees (columns)
+      const allFees = this.outstandingData[0].fees;
+
+      // 2. Build Header
+      const header = [
+        'Full Name',
+        ...allFees.map(f => f.description),
+        'Total Paid',
+        'Total Unpaid',
+        'Status'
+      ];
+
+      // 3. Build Rows
+      const rows = this.outstandingData.map(student => {
+        const feeColumns = allFees.map(fee => {
+          // Find payment for this fee
+          const payment = student.payments.find(p => p.feeId === fee.id);
+          
+          if (!payment) {
+            return 'N/A'; // Fee didn't apply to this student
+          }
+          
+          return payment.status === 'paid' ? 'Paid' : 'Unpaid';
+        });
+
+        const status = student.totalUnpaid === 0 ? 'Completed' : 'Incomplete';
+
+        return [
+          student.fullName || student.studentId,
+          ...feeColumns,
+          student.totalPaid.toFixed(2),
+          student.totalUnpaid.toFixed(2),
+          status
+        ];
+      });
 
       const csvContent = [
         header.join(','),

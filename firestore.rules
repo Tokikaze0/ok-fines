@@ -29,8 +29,10 @@ service cloud.firestore {
       // 1. Allow users to read their own profile
       // 2. Allow Admins to read all profiles
       // 3. Allow public read of 'student' profiles (for ID lookup)
+      // 4. Allow public read of 'admin' profiles (to check for existing society admins during registration)
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin() || isHomeroom())
-                  || (resource.data.role == 'student');
+                  || (resource.data.role == 'student')
+                  || (resource.data.role == 'admin');
 
       // Create: 
       // 1. Self-registration for the first Admin (setup)

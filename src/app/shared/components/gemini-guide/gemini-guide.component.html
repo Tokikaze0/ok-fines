@@ -1,0 +1,32 @@
+<div class="gemini-guide-container">
+  <!-- Chat Window -->
+  <div class="chat-window" *ngIf="isOpen">
+    <div class="chat-header">
+      <span>Navigation Guide</span>
+      <ion-button fill="clear" size="small" (click)="toggleChat()">
+        <ion-icon name="close" style="color: white;"></ion-icon>
+      </ion-button>
+    </div>
+    <div class="chat-messages">
+      <div *ngFor="let msg of messages" [class.user-msg]="msg.sender === 'user'" [class.bot-msg]="msg.sender === 'bot'">
+        <div [innerHTML]="msg.text"></div>
+      </div>
+      <div *ngIf="isLoading" class="bot-msg loading">
+        <ion-spinner name="dots"></ion-spinner>
+      </div>
+    </div>
+    <div class="chat-input">
+      <ion-input [(ngModel)]="userMessage" placeholder="Ask for help..." (keyup.enter)="sendMessage()"></ion-input>
+      <ion-button fill="clear" (click)="sendMessage()">
+        <ion-icon name="send"></ion-icon>
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Floating Button -->
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="toggleChat()" color="tertiary">
+      <ion-icon name="chatbubbles"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+</div>

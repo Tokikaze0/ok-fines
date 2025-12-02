@@ -332,7 +332,7 @@ export class PaymentService {
             }
         }
 
-        if (totalUnpaid > 0) {
+        // if (totalUnpaid > 0) {
             const fullName = student.fullName || (student.firstName && student.lastName ? `${student.firstName} ${student.lastName}` : undefined);
             report.push({
                 studentId: student.studentId!,
@@ -344,7 +344,7 @@ export class PaymentService {
                 payments: relevantPayments,
                 fees: fees
             });
-        }
+        // }
       }
 
       return report;

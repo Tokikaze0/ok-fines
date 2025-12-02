@@ -26,21 +26,17 @@
       <ion-item lines="none">
         <ion-label>Select students to assign this fee (optional)</ion-label>
       </ion-item>
-      <ion-item lines="none">
-        <ion-checkbox slot="start" [(ngModel)]="selectAll" (ionChange)="toggleSelectAll($event)"></ion-checkbox>
-        <ion-label>All students</ion-label>
-      </ion-item>
       <!-- Group filters -->
       <ion-item lines="none">
         <ion-label>Filter by Year</ion-label>
-        <ion-select [(ngModel)]="filterYear" (ionChange)="selectedStudentIds = []; selectAll = false;">
+        <ion-select [(ngModel)]="filterYear" (ionChange)="selectedStudentIds = []">
           <ion-select-option [value]="null">All</ion-select-option>
           <ion-select-option *ngFor="let y of yearLevels" [value]="y">{{ y }}</ion-select-option>
         </ion-select>
       </ion-item>
       <ion-item lines="none">
         <ion-label>Filter by Section</ion-label>
-        <ion-select [(ngModel)]="filterSection" (ionChange)="selectedStudentIds = []; selectAll = false;">
+        <ion-select [(ngModel)]="filterSection" (ionChange)="selectedStudentIds = []">
           <ion-select-option [value]="null">All</ion-select-option>
           <ion-select-option *ngFor="let s of sections" [value]="s">{{ s }}</ion-select-option>
         </ion-select>

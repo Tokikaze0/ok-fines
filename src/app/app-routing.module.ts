@@ -47,6 +47,11 @@ const routes: Routes = [
     loadChildren: () => import('./pages/student/student-fees/student-fees.module').then(m => m.StudentFeesPageModule)
   },
   {
+    path: 'profile',
+    loadChildren: () => import('./pages/profile/profile.module').then(m => m.ProfilePageModule),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'landing',
     loadComponent: () => import('./landing/landing.page').then(m => m.LandingPage)
   },

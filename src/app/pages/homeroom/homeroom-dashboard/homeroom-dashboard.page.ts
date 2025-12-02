@@ -35,7 +35,7 @@ export class HomeroomDashboardPage implements OnInit, OnDestroy {
             } else {
                 this.isLoading = false;
                 // AuthGuard should handle redirect, but just in case
-                this.router.navigate(['/home']);
+                this.router.navigate(['/landing']);
             }
         });
     }
@@ -73,7 +73,7 @@ export class HomeroomDashboardPage implements OnInit, OnDestroy {
         try {
             await this.auth.logout();
             await this.showToast('Successfully logged out');
-            this.router.navigate(['/home']);
+            this.router.navigate(['/landing']);
         } catch (error) {
             await this.showToast('Logout failed. Please try again.', 'danger');
         }

@@ -16,7 +16,6 @@ export class ManageFeesPage implements OnInit, OnDestroy {
   unsubscribe?: () => void;
   students: any[] = [];
   selectedStudentIds: string[] = [];
-  selectAll = false;
   yearLevels: string[] = [];
   sections: string[] = [];
   filterYear: string | null = null;
@@ -139,7 +138,6 @@ export class ManageFeesPage implements OnInit, OnDestroy {
       this.newFeeDescription = '';
       this.newFeeAmount = null;
       this.selectedStudentIds = [];
-      this.selectAll = false;
   }
 
   async loadStudents() {
@@ -164,20 +162,6 @@ export class ManageFeesPage implements OnInit, OnDestroy {
     const idx = this.selectedStudentIds.indexOf(studentId);
     if (idx === -1) this.selectedStudentIds.push(studentId);
     else this.selectedStudentIds.splice(idx, 1);
-    this.selectAll = this.selectedStudentIds.length === this.getDisplayedStudents().length && this.getDisplayedStudents().length > 0;
-  }
-
-  toggleSelectAll(event?: any) {
-    // If triggered by event, use the checked state from event
-    if (event) {
-        this.selectAll = event.detail.checked;
-    }
-    
-    if (this.selectAll) {
-      this.selectedStudentIds = this.getDisplayedStudents().map(s => s.id);
-    } else {
-      this.selectedStudentIds = [];
-    }
   }
 
   getDisplayedStudents() {

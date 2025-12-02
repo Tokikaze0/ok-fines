@@ -18,12 +18,14 @@ export class StudentUserManagementPage implements OnInit {
     password = '';
     confirm = '';
     studentId = '';
-    society = '';
+    society = 'ITS';
     lastName = '';
     firstName = '';
     middleName = '';
-    programId = '';
-    collegeId = '';
+    programId = 'BSIT';
+    collegeId = 'CCS';
+    yearLevelId = '';
+    sectionId = '';
     selectedUser: any | null = null;
     isEditing = false;
     isUploading = false;
@@ -116,8 +118,9 @@ export class StudentUserManagementPage implements OnInit {
                     middleName: this.middleName,
                     programId: this.programId,
                     collegeId: this.collegeId,
-                    yearLevelId: '',
-                    sectionId: ''
+                    yearLevelId: this.yearLevelId,
+                    sectionId: this.sectionId,
+                    societyId: 'ITS'
                 }
             ]);
             await loader.dismiss();
@@ -140,6 +143,8 @@ export class StudentUserManagementPage implements OnInit {
         this.society = user.society;
         this.programId = user.programId;
         this.collegeId = user.collegeId;
+        this.yearLevelId = user.yearLevelId;
+        this.sectionId = user.sectionId;
         this.isEditing = true;
     }
 
@@ -157,7 +162,9 @@ export class StudentUserManagementPage implements OnInit {
                 middleName: this.middleName,
                 society: this.society,
                 programId: this.programId,
-                collegeId: this.collegeId
+                collegeId: this.collegeId,
+                yearLevelId: this.yearLevelId,
+                sectionId: this.sectionId
             });
             await loader.dismiss();
             this.showToast('Student updated successfully');
